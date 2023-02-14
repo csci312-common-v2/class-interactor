@@ -21,14 +21,19 @@ const Console = ({ room }: Props) => {
 
   // Handle state updates on reconnecting to a room
   useEffect(() => {
-    if (!socket) return;
-
-    socket.on("PollStart", ({ id }) => {
-      setPollId(id);
-    });
+    if (socket) {
+      socket.on("PollStart", ({ id }) => {
+        setPollId(id);
+      });
+    }
   }, [socket]);
 
   const launchPoll = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (pollId) {
+      // If a poll is currently running, end it
+      endPoll(event);
+    }
+
     event.preventDefault();
     if (socket) {
       socket.emit(
@@ -36,6 +41,7 @@ const Console = ({ room }: Props) => {
         { roomId: room.id },
         ({ id }: { id: string }) => {
           setPollId(id);
+          setPollResponses(0);
         }
       );
     }
@@ -54,6 +60,13 @@ const Console = ({ room }: Props) => {
       socket.emit("PollEnd", { roomId: room.id, pollId }, () => {
         setPollId(null);
       });
+    }
+  };
+
+  const togglePoll = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (socket) {
+      socket.emit("PollToggle", { roomId: room.id, pollId });
     }
   };
 
@@ -76,6 +89,9 @@ const Console = ({ room }: Props) => {
             </Button>
             <Button onClick={revealPoll} disabled={!pollId}>
               Reveal poll
+            </Button>
+            <Button onClick={togglePoll} disabled={!pollId}>
+              Toggle viewer
             </Button>
             <Button onClick={endPoll} disabled={!pollId}>
               End poll

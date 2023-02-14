@@ -70,7 +70,6 @@ nextApp.prepare().then(() => {
       return;
     }
     const [, roomId, admin] = roomParams;
-    console.log(roomId, admin);
 
     // When client newly connects send any pending state as socket commands
     // Polls
@@ -110,6 +109,10 @@ nextApp.prepare().then(() => {
         io.of(`/rooms/${roomId}`).emit("PollResults", values);
       });
 
+      socket.on("PollToggle", async ({ pollId }) => {
+        io.of(`/rooms/${roomId}`).emit("PollToggle");
+      });
+
       socket.on("PollEnd", async ({ pollId }, callback) => {
         // Set end time so we know poll is no longer active
         await knex("Poll")
@@ -122,7 +125,7 @@ nextApp.prepare().then(() => {
       // Viewer interface
       socket.on("PollResponse", async (data, callback) => {
         const { id: pollId, prevChoice, newChoice } = data;
-        console.log(pollId, prevChoice, newChoice);
+
         // Fetch the current counts for this poll, update counts, subtracting if there is a previous value.
         // Perform the operations as a transaction so the update is atomic
         try {
@@ -140,7 +143,7 @@ nextApp.prepare().then(() => {
               values[prevChoice as string] += -1;
             }
             values[newChoice as string] += 1;
-            console.log(values);
+
             // Update counts as part of the transaction
             await trx("Poll")
               .where({ id: pollId })

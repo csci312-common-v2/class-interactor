@@ -75,17 +75,18 @@ const Poll = ({ id, totalCallback }: PollProps) => {
     // Clear any previous choice and or data
     setChoice(null);
     setPollData(null);
+    setTotal(0);
   }, [id]);
 
   useEffect(() => {
-    if (!socket) return;
-
-    // Update with realtime poll data
-    socket.on("PollResults", (data: { [key: string]: number }) => {
-      setPollData(data);
-      const newTotal = Object.values(data).reduce((a, b) => a + b, 0);
-      setTotal(newTotal);
-    });
+    if (socket) {
+      // Update with realtime poll data
+      socket.on("PollResults", (data: { [key: string]: number }) => {
+        setPollData(data);
+        const newTotal = Object.values(data).reduce((a, b) => a + b, 0);
+        setTotal(newTotal);
+      });
+    }
   }, [socket]);
 
   useEffect(() => {

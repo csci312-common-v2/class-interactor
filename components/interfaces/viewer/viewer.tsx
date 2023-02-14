@@ -26,16 +26,24 @@ const PositionedPoll = ({ pollId }: { pollId: string }) => {
 const Viewer = () => {
   const socket = useSocketContext();
   const [pollId, setPollId] = useState<string | null>(null);
+  const [pollVisible, setPollVisible] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
 
     socket.on("PollStart", ({ id }) => {
       setPollId(id);
+      setPollVisible(true);
     });
 
     socket.on("PollEnd", () => {
       setPollId(null);
+      setPollVisible(false);
+    });
+
+    socket.on("PollToggle", () => {
+      // Ensure the toggle is based on the current value
+      setPollVisible((prevVisible) => !prevVisible);
     });
   }, [socket]);
 
@@ -48,7 +56,7 @@ const Viewer = () => {
         height: "100vh",
       }}
     >
-      {pollId && <PositionedPoll pollId={pollId} />}
+      {pollId && pollVisible && <PositionedPoll pollId={pollId} />}
     </Box>
   );
 };
