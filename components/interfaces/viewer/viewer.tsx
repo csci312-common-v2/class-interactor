@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSocketContext } from "../../../components/contexts/socket/useSocketContext";
 import Box from "@mui/material/Box";
 import Poll from "../../interactions/Poll";
+import ReactionDisplay from "../../interactions/ReactionDisplay";
 
 const PositionedPoll = ({ pollId }: { pollId: string }) => {
   return (
@@ -57,6 +58,7 @@ const Viewer = () => {
       }}
     >
       {pollId && pollVisible && <PositionedPoll pollId={pollId} />}
+      <ReactionDisplay />
     </Box>
   );
 };

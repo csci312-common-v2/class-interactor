@@ -72,14 +72,13 @@ nextApp.prepare().then(() => {
     const [, roomId, admin] = roomParams;
 
     // When client newly connects send any pending state as socket commands
-    // Polls
+    // Pending polls
     knex
       .table("Poll")
       .where({ roomId })
-      .whereNull("ended_at")
       .orderBy("created_at", "desc")
       .then((polls) => {
-        if (polls.length) {
+        if (polls.length && !polls[0].ended_at) {
           socket.emit("PollStart", { id: polls[0].id });
         }
       });
@@ -162,6 +161,19 @@ nextApp.prepare().then(() => {
           });
         } catch (error) {
           callback(error);
+        }
+      });
+
+      // Reaction
+      let emojiID = 0;
+      socket.on("ReactionSend", async (codePoint) => {
+        // TODO: Check if Emoji is in the allowed list, and eventually record in database
+        if (codePoint) {
+          io.of(`/rooms/${roomId}`).emit("ReactionShow", {
+            id: emojiID++,
+            position: Math.floor(Math.random() * 101),
+            codePoint,
+          });
         }
       });
     }

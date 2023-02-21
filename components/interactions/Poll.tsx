@@ -37,7 +37,7 @@ const AnswerFraction = styled("span")<AnswerFractionProps>(
 
 type AnswerEntryProps = {
   label: string;
-  value: number | undefined;
+  value?: number;
   total: number;
 };
 
