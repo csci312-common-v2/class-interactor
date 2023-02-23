@@ -28,14 +28,15 @@ const Console = ({ room }: Props) => {
     }
   }, [socket]);
 
-  const launchPoll = (event: React.MouseEvent<HTMLButtonElement>) => {
-    if (pollId) {
-      // If a poll is currently running, end it
-      endPoll(event);
-    }
-
+  const launchPoll = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (socket) {
+      // If a poll is currently running, end it
+      if (pollId) {
+        await new Promise((resolve) => {
+          socket.emit("PollEnd", { roomId: room.id, pollId }, resolve);
+        });
+      }
       socket.emit(
         "PollLaunch",
         { roomId: room.id },
@@ -85,16 +86,16 @@ const Console = ({ room }: Props) => {
         >
           <ButtonGroup variant="outlined" size="small">
             <Button onClick={launchPoll} disabled={!socket}>
-              Launch poll
+              Launch
             </Button>
             <Button onClick={revealPoll} disabled={!pollId}>
-              Reveal poll
+              Reveal
             </Button>
             <Button onClick={togglePoll} disabled={!pollId}>
-              Toggle viewer
+              Show/Hide
             </Button>
             <Button onClick={endPoll} disabled={!pollId}>
-              End poll
+              End
             </Button>
           </ButtonGroup>
           <Poll id={pollId} totalCallback={setPollResponses} />

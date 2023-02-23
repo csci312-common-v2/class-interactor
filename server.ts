@@ -2,8 +2,8 @@ import express, { Express, Request, Response } from "express";
 import * as http from "http";
 import next, { NextApiHandler } from "next";
 import * as socketio from "socket.io";
-import { callbackify } from "util";
 import { knex } from "./knex/knex";
+import { v4 as uuidv4 } from "uuid";
 
 declare global {
   namespace Express {
@@ -165,12 +165,11 @@ nextApp.prepare().then(() => {
       });
 
       // Reaction
-      let emojiID = 0;
       socket.on("ReactionSend", async (codePoint) => {
-        // TODO: Check if Emoji is in the allowed list, and eventually record in database
+        // TODO: Check if Emoji is in the allowed list
         if (codePoint) {
           io.of(`/rooms/${roomId}`).emit("ReactionShow", {
-            id: emojiID++,
+            id: uuidv4(),
             position: Math.floor(Math.random() * 101),
             codePoint,
           });
