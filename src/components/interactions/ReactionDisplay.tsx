@@ -11,6 +11,8 @@ const EmojiTrack = styled("div")<EmojiTrackProps>(({ theme, position }) => ({
   position: "absolute",
   top: "30vh",
   left: `${position}%`,
+  height: "calc(70vh - 20px)",
+  overflowY: "hidden",
 }));
 
 const Emoji = styled("div")(({ theme }) => ({
