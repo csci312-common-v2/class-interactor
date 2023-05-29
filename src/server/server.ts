@@ -170,7 +170,7 @@ nextApp.prepare().then(() => {
         if (codePoint) {
           io.of(`/rooms/${roomId}`).emit("ReactionShow", {
             id: uuidv4(),
-            position: Math.floor(Math.random() * 101),
+            position: Math.floor(Math.random() * 100),
             codePoint,
           });
         }
