@@ -1,6 +1,6 @@
 import { useSocketContext } from "../../contexts/socket/useSocketContext";
 import React, { useEffect, useState } from "react";
-import Poll from "../../interactions/Poll";
+import Poll from "@/components/interactions/Poll";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Unstable_Grid2";
 import Box from "@mui/material/Box";

@@ -1,10 +1,10 @@
 import { NextPage } from "next";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
-import { SocketProvider } from "../../components/contexts/socket/useSocketContext";
-import Console from "../../components/interfaces/console/console";
-import Participant from "../../components/interfaces/participant/participant";
-import Viewer from "../../components/interfaces/viewer/viewer";
+import { SocketProvider } from "@/components/contexts/socket/useSocketContext";
+import Console from "@/components/interfaces/console/console";
+import Participant from "@/components/interfaces/participant/participant";
+import Viewer from "@/components/interfaces/viewer/viewer";
 
 const Page: NextPage = () => {
   const [room, setRoom] = useState<{

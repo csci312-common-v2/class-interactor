@@ -1,5 +1,9 @@
 {
   "extends": "./tsconfig.json",
+  "ts-node": {
+    // Needed to support path aliases (requires `npm i -D tsconfig-paths`)
+    "require": ["tsconfig-paths/register"]
+  },
   "compilerOptions": {
     "module": "commonjs",
     "outDir": "dist",
@@ -8,5 +12,5 @@
     "isolatedModules": false,
     "noEmit": false
   },
-  "include": ["server.ts"]
+  "include": ["src/server/server.ts"]
 }

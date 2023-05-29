@@ -2,7 +2,7 @@ import express, { Express, Request, Response } from "express";
 import * as http from "http";
 import next, { NextApiHandler } from "next";
 import * as socketio from "socket.io";
-import { knex } from "./knex/knex";
+import { knex } from "@/knex/knex";
 import { v4 as uuidv4 } from "uuid";
 
 declare global {

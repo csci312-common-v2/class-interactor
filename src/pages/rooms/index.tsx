@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { knex } from "../../knex/knex";
+import { knex } from "@/knex/knex";
 
 type RoomsProps = {
   rooms: Array<{ [key: string]: number }>;

@@ -1,47 +1,47 @@
 import type { Knex } from "knex";
-import { loadEnvConfig } from '@next/env';
+import { loadEnvConfig } from "@next/env";
 
 // Adapted from NextJS knex example
-const dev = process.env.NODE_ENV !== 'production'
-const { DATABASE_URL } = loadEnvConfig('./', dev).combinedEnv
+const dev = process.env.NODE_ENV !== "production";
+const { DATABASE_URL } = loadEnvConfig("./", dev).combinedEnv;
 
 const defaultSettings = {
   migrations: {
-    directory: './knex/migrations',
+    directory: "./src/knex/migrations",
   },
   seeds: {
-    directory: './knex/seeds',
+    directory: "./src/knex/seeds",
   },
 };
 
 const config: { [key: string]: Knex.Config } = {
   test: {
     ...defaultSettings,
-    client: 'sqlite3',
+    client: "sqlite3",
     connection: ":memory:",
     useNullAsDefault: true,
     seeds: {
-      directory: './seeds/test'
-    }
+      directory: "./src/knex/seeds/test",
+    },
   },
 
   development: {
     ...defaultSettings,
-    client: 'sqlite3',
+    client: "sqlite3",
     connection: {
-      filename: './interactor.db'
+      filename: "./interactor.db",
     },
-    useNullAsDefault: true
+    useNullAsDefault: true,
   },
 
   production: {
     ...defaultSettings,
-    client: 'pg',
+    client: "pg",
     connection: {
       connectionString: DATABASE_URL,
-      ssl: true
-    }
-  }
+      ssl: true,
+    },
+  },
 };
 
 export default config;

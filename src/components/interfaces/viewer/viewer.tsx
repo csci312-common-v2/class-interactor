@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useSocketContext } from "../../../components/contexts/socket/useSocketContext";
+import { useSocketContext } from "@/components/contexts/socket/useSocketContext";
 import Box from "@mui/material/Box";
-import Poll from "../../interactions/Poll";
-import ReactionDisplay from "../../interactions/ReactionDisplay";
+import Poll from "@/components/interactions/Poll";
+import ReactionDisplay from "@/components/interactions/ReactionDisplay";
 
 const PositionedPoll = ({ pollId }: { pollId: string }) => {
   return (

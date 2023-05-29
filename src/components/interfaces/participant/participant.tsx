@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { useSocketContext } from "../../../components/contexts/socket/useSocketContext";
-import Poll from "../../interactions/Poll";
-import Reaction from "../../interactions/Reaction";
-import ReactionDisplay from "../../interactions/ReactionDisplay";
+import { useSocketContext } from "@/components/contexts/socket/useSocketContext";
+import Poll from "@/components/interactions/Poll";
+import Reaction from "@/components/interactions/Reaction";
+import ReactionDisplay from "@/components/interactions/ReactionDisplay";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Unstable_Grid2";
 import Box from "@mui/material/Unstable_Grid2";
