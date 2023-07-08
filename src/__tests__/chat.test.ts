@@ -10,7 +10,7 @@ describe("Chat server-side integration tests", () => {
   beforeAll(() => {
     // Ensure test database is initialized before an tests
     return knex.migrate.rollback().then(() => knex.migrate.latest());
-  });
+  }, 10000);
 
   afterAll(() => {
     // To prevent a warning message from jest about a process failing to exit
