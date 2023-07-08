@@ -100,12 +100,7 @@ nextApp.prepare().then(() => {
 
       socket.on("PollReveal", async ({ pollId }) => {
         const poll = await knex("Poll").first("values").where({ id: pollId });
-        // SQLite does not parse JSON automatically...
-        const values =
-          typeof poll.values === "string"
-            ? JSON.parse(poll.values)
-            : poll.values;
-        io.of(`/rooms/${roomId}`).emit("PollResults", values);
+        io.of(`/rooms/${roomId}`).emit("PollResults", poll.values);
       });
 
       socket.on("PollToggle", async ({ pollId }) => {
@@ -133,28 +128,19 @@ nextApp.prepare().then(() => {
             const poll = await trx("Poll")
               .first("values")
               .where({ id: pollId });
-            // SQLite does not parse JSON automatically...
-            let values =
-              typeof poll.values === "string"
-                ? JSON.parse(poll.values)
-                : poll.values;
+
             if (prevChoice) {
-              values[prevChoice as string] += -1;
+              poll.values[prevChoice as string] += -1;
             }
-            values[newChoice as string] += 1;
+            poll.values[newChoice as string] += 1;
 
             // Update counts as part of the transaction
             await trx("Poll")
               .where({ id: pollId })
-              .update({
-                values:
-                  typeof poll.values === "string"
-                    ? JSON.stringify(values)
-                    : values,
-              });
+              .update({ values: poll.values });
 
             // Update admin viewers with current results of the poll
-            io.of(`/rooms/${roomId}/admin`).emit("PollResults", values);
+            io.of(`/rooms/${roomId}/admin`).emit("PollResults", poll.values);
 
             // Let submitter know response received successfully
             callback({ choice: newChoice });
