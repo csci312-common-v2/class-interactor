@@ -49,7 +49,10 @@ nextApp.prepare().then(() => {
       return;
     }
 
-    const room = await knex("Room").where({ id: res[1] }).select().first();
+    const room = await knex("Room")
+      .where({ visibleId: res[1] })
+      .select()
+      .first();
     if (!room) {
       // Unknown or invalid roomId
       next(null, false);
@@ -61,7 +64,7 @@ nextApp.prepare().then(() => {
     next(null, true);
   });
 
-  rooms.on("connection", (socket: socketio.Socket) => {
+  rooms.on("connection", async (socket: socketio.Socket) => {
     console.log(`Connected to ${socket.nsp.name}`);
 
     const roomParams = roomRegEx.exec(socket.nsp.name);
@@ -69,7 +72,11 @@ nextApp.prepare().then(() => {
       socket.emit("RoomError");
       return;
     }
-    const [, roomId, admin] = roomParams;
+    const [, roomName, admin] = roomParams;
+    const { id: roomId, ...room } = await knex("Room")
+      .where({ visibleId: roomName })
+      .select()
+      .first();
 
     // When client newly connects send any pending state as socket commands
     // Pending polls
@@ -93,18 +100,20 @@ nextApp.prepare().then(() => {
           .insert({ roomId, values: { A: 0, B: 0, C: 0, D: 0, E: 0 } }, ["id"]);
 
         // Launch poll on all viewers
-        io.of(`/rooms/${roomId}`).emit("PollStart", poll);
+        io.of(`/rooms/${roomName}`).emit("PollStart", poll);
 
         callback(poll);
       });
 
       socket.on("PollReveal", async ({ pollId }) => {
         const poll = await knex("Poll").first("values").where({ id: pollId });
-        io.of(`/rooms/${roomId}`).emit("PollResults", poll.values);
+        // Send poll results to all viewers
+        io.of(`/rooms/${roomName}`).emit("PollResults", poll.values);
       });
 
       socket.on("PollToggle", async ({ pollId }) => {
-        io.of(`/rooms/${roomId}`).emit("PollToggle");
+        // Toggle poll visibility on all viewers
+        io.of(`/rooms/${roomName}`).emit("PollToggle");
       });
 
       socket.on("PollEnd", async ({ pollId }, callback) => {
@@ -112,7 +121,8 @@ nextApp.prepare().then(() => {
         await knex("Poll")
           .where({ id: pollId })
           .update({ ended_at: knex.fn.now() });
-        io.of(`/rooms/${roomId}`).emit("PollEnd");
+        // End poll on all viewers
+        io.of(`/rooms/${roomName}`).emit("PollEnd");
         callback(true);
       });
     } else {
@@ -140,7 +150,7 @@ nextApp.prepare().then(() => {
               .update({ values: poll.values });
 
             // Update admin viewers with current results of the poll
-            io.of(`/rooms/${roomId}/admin`).emit("PollResults", poll.values);
+            io.of(`/rooms/${roomName}/admin`).emit("PollResults", poll.values);
 
             // Let submitter know response received successfully
             callback({ choice: newChoice });
@@ -154,7 +164,7 @@ nextApp.prepare().then(() => {
       socket.on("ReactionSend", async (codePoint) => {
         // TODO: Check if Emoji is in the allowed list
         if (codePoint) {
-          io.of(`/rooms/${roomId}`).emit("ReactionShow", {
+          io.of(`/rooms/${roomName}`).emit("ReactionShow", {
             id: uuidv4(),
             position: Math.floor(Math.random() * 100),
             codePoint,

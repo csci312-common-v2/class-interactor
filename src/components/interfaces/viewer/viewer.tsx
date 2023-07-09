@@ -32,20 +32,28 @@ const Viewer = () => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("PollStart", ({ id }) => {
+    const onPollStart = ({ id }: { id: string }) => {
       setPollId(id);
       setPollVisible(true);
-    });
-
-    socket.on("PollEnd", () => {
+    };
+    const onPollEnd = () => {
       setPollId(null);
       setPollVisible(false);
-    });
-
-    socket.on("PollToggle", () => {
+    };
+    const onPollToggle = () => {
       // Ensure the toggle is based on the current value
       setPollVisible((prevVisible) => !prevVisible);
-    });
+    };
+
+    socket.on("PollStart", onPollStart);
+    socket.on("PollEnd", onPollEnd);
+    socket.on("PollToggle", onPollToggle);
+
+    return () => {
+      socket.off("PollStart", onPollStart);
+      socket.off("PollEnd", onPollEnd);
+      socket.off("PollToggle", onPollToggle);
+    };
   }, [socket]);
 
   // If we need to use ChromaKey...
@@ -57,7 +65,7 @@ const Viewer = () => {
         height: "100vh",
       }}
     >
-      {pollId && pollVisible && <PositionedPoll pollId={pollId} />}
+      {pollId && pollVisible && <PositionedPoll key={pollId} pollId={pollId} />}
       <ReactionDisplay />
     </Box>
   );

@@ -72,20 +72,20 @@ const Poll = ({ id, totalCallback }: PollProps) => {
   const [total, setTotal] = useState(0);
 
   useEffect(() => {
-    // Clear any previous choice and or data
-    setChoice(null);
-    setPollData(null);
-    setTotal(0);
-  }, [id]);
-
-  useEffect(() => {
     if (socket) {
       // Update with realtime poll data
-      socket.on("PollResults", (data: { [key: string]: number }) => {
+      const onPollResults = (data: { [key: string]: number }) => {
         setPollData(data);
         const newTotal = Object.values(data).reduce((a, b) => a + b, 0);
         setTotal(newTotal);
-      });
+      };
+
+      socket.on("PollResults", onPollResults);
+
+      // Make sure to remove listener when component is unmounted
+      return () => {
+        socket.off("PollResults", onPollResults);
+      };
     }
   }, [socket]);
 

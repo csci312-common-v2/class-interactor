@@ -19,8 +19,15 @@ const Page = ({ rooms }: RoomsProps) => {
 
 export async function getServerSideProps() {
   const rooms = await knex("Room").select();
-  console.log(rooms);
-  return { props: { rooms } };
+  // Remove the internal ID, replacing with the visible ID
+  return {
+    props: {
+      rooms: rooms.map(({ id, visibleId, ...room }) => ({
+        id: visibleId,
+        ...room,
+      })),
+    },
+  };
 }
 
 export default Page;

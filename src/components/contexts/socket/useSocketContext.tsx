@@ -15,18 +15,17 @@ const SocketProvider = ({ roomId, children, admin = false }: Props) => {
 
   useEffect(() => {
     if (!roomId) return;
-
     const newSocket = SocketIO(`/rooms/${roomId}` + (admin ? "/admin" : ""));
     setSocket(newSocket);
 
+    // In development, with strict mode, the component is mounted twice,
+    // so we expect two attempts to connect with a cleanup (disconnect) in
+    // between.
+
     // Disconnect when component is unmounted, or a different room is specified
     return () => {
-      if (socket && socket.connected) {
-        socket.disconnect();
-      }
+      newSocket.disconnect();
     };
-    // Setting socket as a dependency leads to an infinite loop. We
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomId, admin]);
 
   return (

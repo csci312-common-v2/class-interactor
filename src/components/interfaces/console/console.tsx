@@ -22,9 +22,13 @@ const Console = ({ room }: Props) => {
   // Handle state updates on reconnecting to a room
   useEffect(() => {
     if (socket) {
-      socket.on("PollStart", ({ id }) => {
+      const onPollStart = ({ id }: { id: string }) => {
         setPollId(id);
-      });
+      };
+      socket.on("PollStart", onPollStart);
+      return () => {
+        socket.off("PollStart", onPollStart);
+      };
     }
   }, [socket]);
 
@@ -98,7 +102,7 @@ const Console = ({ room }: Props) => {
               End
             </Button>
           </ButtonGroup>
-          <Poll id={pollId} totalCallback={setPollResponses} />
+          <Poll key={pollId} id={pollId} totalCallback={setPollResponses} />
           <div>Responses: {pollId && pollResponses}</div>
         </Box>
       </Grid>
