@@ -1,5 +1,6 @@
 import type { Knex } from "knex";
 import { loadEnvConfig } from "@next/env";
+import { PostgreSqlContainer } from "testcontainers";
 
 // Adapted from NextJS knex example
 const dev = process.env.NODE_ENV !== "production";
@@ -17,9 +18,20 @@ const defaultSettings = {
 const config: { [key: string]: Knex.Config } = {
   test: {
     ...defaultSettings,
-    client: "sqlite3",
-    connection: ":memory:",
-    useNullAsDefault: true,
+    client: "pg",
+    connection: async () => {
+      // Create a new container for each connection, i.e., for each test file
+      // being run in parallel. These containers are automatically cleaned up
+      // by test containers via its ryuk resource reaper.
+      const container = await new PostgreSqlContainer("postgres:15").start();
+      return {
+        host: container.getHost(),
+        port: container.getPort(),
+        database: container.getDatabase(),
+        user: container.getUsername(),
+        password: container.getPassword(),
+      };
+    },
     seeds: {
       directory: "./src/knex/seeds/test",
     },
@@ -27,11 +39,10 @@ const config: { [key: string]: Knex.Config } = {
 
   development: {
     ...defaultSettings,
-    client: "sqlite3",
+    client: "pg",
     connection: {
-      filename: "./interactor.db",
+      connectionString: DATABASE_URL,
     },
-    useNullAsDefault: true,
   },
 
   production: {

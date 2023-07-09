@@ -15,6 +15,10 @@ jobs:
         with:
           node-version: 18.x
           cache: "npm"
+      - name: Pull test docker images
+        shell: bash
+        run: |
+          for each in {"postgres:15","testcontainers/ryuk:0.5.1"}; do docker pull "$each"; done
       - name: npm install, test and lint
         run: |
           npm ci

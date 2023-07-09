@@ -21,13 +21,20 @@ const Participant = ({ room }: Props) => {
   useEffect(() => {
     if (!socket) return;
 
-    socket.on("PollStart", ({ id }) => {
+    const onPollStart = ({ id }: { id: string }) => {
       setPollId(id);
-    });
-
-    socket.on("PollEnd", () => {
+    };
+    const onPollEnd = () => {
       setPollId(null);
-    });
+    };
+
+    socket.on("PollStart", onPollStart);
+    socket.on("PollEnd", onPollEnd);
+
+    return () => {
+      socket.off("PollStart", onPollStart);
+      socket.off("PollEnd", onPollEnd);
+    };
   }, [socket]);
 
   return (
@@ -36,7 +43,7 @@ const Participant = ({ room }: Props) => {
       <Grid container spacing={2}>
         <Grid xs={12} md={2}>
           <h3>Peer Instruction</h3>
-          <Poll id={pollId} />
+          <Poll key={pollId} id={pollId} />
         </Grid>
         <Grid xs={12} md={5} order={{ xs: 3, sm: 2 }}></Grid>
         <Grid xs={12} md={5} order={{ xs: 4, sm: 3 }}></Grid>

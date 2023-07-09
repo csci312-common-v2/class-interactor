@@ -3,13 +3,14 @@ import { Knex } from "knex";
 export async function up(knex: Knex): Promise<void> {
   return knex.schema
     .createTable("Room", (table) => {
-      table.uuid("id").primary();
+      table.increments("id").primary();
+      table.uuid("visibleId").unique().notNullable();
       table.string("name").notNullable();
     })
     .createTable("Poll", (table) => {
       table.increments("id").primary();
       table
-        .uuid("roomId")
+        .integer("roomId")
         .references("id")
         .inTable("Room")
         .notNullable()

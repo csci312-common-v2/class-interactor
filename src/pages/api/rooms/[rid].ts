@@ -8,8 +8,11 @@ export default async function handler(
   const { query, method } = req;
   switch (method) {
     case "GET":
-      const room = await knex("Room").where({ id: query.rid }).select().first();
-      res.status(200).json(room);
+      const { id, visibleId, ...other } = await knex("Room")
+        .where({ visibleId: query.rid })
+        .select()
+        .first();
+      res.status(200).json({ id: visibleId, ...other });
       break;
     default:
       res.setHeader("Allow", ["GET"]);

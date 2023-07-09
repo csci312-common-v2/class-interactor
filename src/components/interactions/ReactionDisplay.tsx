@@ -53,9 +53,13 @@ const ReactionDisplay = () => {
 
   useEffect(() => {
     if (socket) {
-      socket.on("ReactionShow", (reaction) => {
+      const onReactionShow = (reaction: ReactionData) => {
         setReactions((currReactions) => [...currReactions, reaction]);
-      });
+      };
+      socket.on("ReactionShow", onReactionShow);
+      return () => {
+        socket.off("ReactionShow", onReactionShow);
+      };
     }
   }, [socket]);
 
