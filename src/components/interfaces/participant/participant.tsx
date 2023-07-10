@@ -3,9 +3,11 @@ import { useSocketContext } from "@/components/contexts/socket/useSocketContext"
 import Poll from "@/components/interactions/Poll";
 import Reaction from "@/components/interactions/Reaction";
 import ReactionDisplay from "@/components/interactions/ReactionDisplay";
+import QuestionBoard from "@/components/interactions/QuestionBoard";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Unstable_Grid2";
-import Box from "@mui/material/Unstable_Grid2";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
 
 interface Props {
   room: {
@@ -39,13 +41,21 @@ const Participant = ({ room }: Props) => {
 
   return (
     <Container maxWidth="lg">
-      <h1>Room: {room.name}</h1>
+      <Typography variant="h4" gutterBottom sx={{ mt: 1 }}>
+        Room: {room.name}
+      </Typography>
       <Grid container spacing={2}>
         <Grid xs={12} md={2}>
-          <h3>Peer Instruction</h3>
+          <Typography variant="h6">Peer Instruction</Typography>
           <Poll key={pollId} id={pollId} />
         </Grid>
-        <Grid xs={12} md={5} order={{ xs: 3, sm: 2 }}></Grid>
+        <Grid xs={12} md={5} order={{ xs: 3, sm: 2 }}>
+          <Typography variant="h6">Q & A</Typography>
+          <QuestionBoard />
+          <Typography variant="caption" color="text.secondary" component="div">
+            Questions will appear once approved by your instructor.
+          </Typography>
+        </Grid>
         <Grid xs={12} md={5} order={{ xs: 4, sm: 3 }}></Grid>
         <Grid xs={12} md={12} order={{ xs: 2, sm: 4 }}>
           <Reaction />

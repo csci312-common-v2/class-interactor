@@ -78,8 +78,7 @@ nextApp.prepare().then(() => {
       .select()
       .first();
 
-    // When client newly connects send any pending state as socket commands
-    // Pending polls
+    // Send any pending polls when a client newly connects
     knex
       .table("Poll")
       .where({ roomId })
@@ -92,6 +91,18 @@ nextApp.prepare().then(() => {
 
     if (admin) {
       // Administration interface
+
+      // Send all questions when a client newly connects
+      knex
+        .table("Question")
+        .where({ roomId })
+        .then((questions) => {
+          socket.emit(
+            "QuestionNew",
+            questions.map(({ roomId: dropRoomId, ...question }) => question)
+          );
+        });
+
       socket.on("PollLaunch", async (data, callback) => {
         // Create a new poll in the database with default options and zero counts. The `['id']` returns
         // the corresponding inserted values.
@@ -125,8 +136,39 @@ nextApp.prepare().then(() => {
         io.of(`/rooms/${roomName}`).emit("PollEnd");
         callback(true);
       });
+
+      // Question Board
+      socket.on("QuestionApprove", async ({ questionId }, callback) => {
+        // Approve question
+        const [{ roomId: dropRoomId, ...question }] = await knex("Question")
+          .where({ id: questionId })
+          .update({ approved: true }, ["*"]);
+        // Send question to all viewers
+        io.of(`/rooms/${roomName}`).emit("QuestionNew", [question]);
+        callback(question);
+      });
+
+      socket.on("QuestionClear", async ({}) => {
+        // Delete all questions
+        await knex("Question").where({ roomId }).delete();
+
+        io.of(`/rooms/${roomName}`).emit("QuestionClear");
+        socket.emit("QuestionClear");
+      });
     } else {
       // Viewer interface
+
+      // Send all approved questions when a client newly connects
+      knex
+        .table("Question")
+        .where({ roomId, approved: true })
+        .then((questions) => {
+          socket.emit(
+            "QuestionNew",
+            questions.map(({ roomId: dropRoomId, ...question }) => question)
+          );
+        });
+
       socket.on("PollResponse", async (data, callback) => {
         const { id: pollId, prevChoice, newChoice } = data;
 
@@ -172,6 +214,28 @@ nextApp.prepare().then(() => {
         }
       });
     }
+
+    // Question Board
+    socket.on("QuestionAsk", async (data, callback) => {
+      const [{ roomId: dropRoomId, ...newQuestion }] = await knex
+        .table("Question")
+        .insert({ roomId, ...data, approved: false }, ["*"]);
+      callback(true);
+
+      // Send question to administrator for approval
+      io.of(`/rooms/${roomName}/admin`).emit("QuestionNew", [newQuestion]);
+    });
+
+    socket.on("QuestionUpvote", async ({ questionId }, callback) => {
+      const [{ roomId: dropRoomId, ...question }] = await knex
+        .table("Question")
+        .where({ id: questionId })
+        .update({ votes: knex.raw("votes + 1") }, ["*"]);
+
+      // Send updated question to viewers and administrator
+      io.of(`/rooms/${roomName}`).emit("QuestionNew", [question]);
+      io.of(`/rooms/${roomName}/admin`).emit("QuestionNew", [question]);
+    });
 
     socket.on("disconnect", () => {
       console.log("client disconnected");
