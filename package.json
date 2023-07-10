@@ -7,7 +7,7 @@
     "postdev": "docker compose -f docker-compose.dev.yml down",
     "dev": "trap 'exit 0' SIGINT; nodemon",
     "build": "next build && tsc --project tsconfig.server.json",
-    "start": "cross-env NODE_ENV=production node dist/server.js",
+    "start": "cross-env NODE_ENV=production node dist/src/server/server.js",
     "test": "jest --watch",
     "test:ci": "jest --ci",
     "lint": "next lint",
@@ -34,6 +34,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@flydotio/dockerfile": "^0.3.1",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",
     "@types/body-parser": "^1.19.2",

@@ -1,6 +1,5 @@
 import type { Knex } from "knex";
 import { loadEnvConfig } from "@next/env";
-import { PostgreSqlContainer } from "testcontainers";
 
 // Adapted from NextJS knex example
 const dev = process.env.NODE_ENV !== "production";
@@ -20,6 +19,9 @@ const config: { [key: string]: Knex.Config } = {
     ...defaultSettings,
     client: "pg",
     connection: async () => {
+      // Only import testcontainers when running in a test environment
+      const { PostgreSqlContainer } = await import("testcontainers");
+
       // Create a new container for each connection, i.e., for each test file
       // being run in parallel. These containers are automatically cleaned up
       // by test containers via its ryuk resource reaper.
