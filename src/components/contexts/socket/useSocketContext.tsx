@@ -37,4 +37,4 @@ const useSocketContext = () => {
   return useContext(SocketContext);
 };
 
-export { SocketProvider, useSocketContext };
+export { SocketProvider, useSocketContext, Socket };

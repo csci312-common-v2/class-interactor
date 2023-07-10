@@ -1,11 +1,13 @@
 import { useSocketContext } from "../../contexts/socket/useSocketContext";
 import React, { useEffect, useState } from "react";
 import Poll from "@/components/interactions/Poll";
+import QuestionBoard from "@/components/interactions/QuestionBoard";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Unstable_Grid2";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
+import Typography from "@mui/material/Typography";
 
 interface Props {
   room: {
@@ -75,36 +77,65 @@ const Console = ({ room }: Props) => {
     }
   };
 
+  const clearQuestions = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (socket) {
+      socket.emit("QuestionClear", { roomId: room.id });
+    }
+  };
+
   return (
     <Container maxWidth="lg">
-      <h1>Control Console: {room.name}</h1>
+      <Typography variant="h4" gutterBottom sx={{ mt: 1 }}>
+        Control Console: {room.name}
+      </Typography>
       <Grid container spacing={2}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            "& > *": {
-              m: 1,
-            },
-          }}
-        >
-          <ButtonGroup variant="outlined" size="small">
-            <Button onClick={launchPoll} disabled={!socket}>
-              Launch
-            </Button>
-            <Button onClick={revealPoll} disabled={!pollId}>
-              Reveal
-            </Button>
-            <Button onClick={togglePoll} disabled={!pollId}>
-              Show/Hide
-            </Button>
-            <Button onClick={endPoll} disabled={!pollId}>
-              End
-            </Button>
-          </ButtonGroup>
-          <Poll key={pollId} id={pollId} totalCallback={setPollResponses} />
-          <div>Responses: {pollId && pollResponses}</div>
-        </Box>
+        <Grid xs={12} md={3}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              "& > *": {
+                my: 1,
+              },
+            }}
+          >
+            <ButtonGroup variant="outlined" size="small" fullWidth>
+              <Button onClick={launchPoll} disabled={!socket}>
+                Launch
+              </Button>
+              <Button onClick={revealPoll} disabled={!pollId}>
+                Reveal
+              </Button>
+              <Button onClick={togglePoll} disabled={!pollId}>
+                Toggle
+              </Button>
+              <Button onClick={endPoll} disabled={!pollId}>
+                End
+              </Button>
+            </ButtonGroup>
+            <Poll key={pollId} id={pollId} totalCallback={setPollResponses} />
+            <div>Responses: {pollId && pollResponses}</div>
+          </Box>
+        </Grid>
+        <Grid xs={12} md={5}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              "& > *": {
+                my: 1,
+              },
+            }}
+          >
+            <ButtonGroup variant="outlined" size="small">
+              <Button onClick={clearQuestions} disabled={!socket}>
+                Clear
+              </Button>
+            </ButtonGroup>
+            <QuestionBoard admin />
+          </Box>
+        </Grid>
       </Grid>
     </Container>
   );
