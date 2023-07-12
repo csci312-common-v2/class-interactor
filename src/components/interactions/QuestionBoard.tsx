@@ -80,16 +80,16 @@ const QuestionForm = ({ socket }: { socket?: Socket }) => {
   const [question, setQuestion] = useState("");
   const [anonymous, setAnonymous] = useState(true);
 
-  const handleSubmit = () => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (socket) {
       socket.emit(
         "QuestionAsk",
         { question, anonymous },
         (success: boolean) => {
-          console.log(success);
           if (success) {
             setQuestion("");
-            setAnonymous(false);
+            //setAnonymous(false);
           }
         }
       );

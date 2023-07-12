@@ -198,7 +198,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
     socket.on("QuestionAsk", async (data, callback) => {
       const [{ roomId: dropRoomId, ...newQuestion }] = await knex
         .table("Question")
-        .insert({ roomId, ...data, approved: false }, ["*"]);
+        .insert({ roomId, ...data, approved: false, votes: 0 }, ["*"]);
       callback(true);
 
       // Send question to administrator for approval
