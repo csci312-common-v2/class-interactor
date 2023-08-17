@@ -25,7 +25,7 @@ const Participant = ({ room }: Props) => {
   useEffect(() => {
     if (!socket) return;
 
-    const onPollStart = ({ id }: { id: string }) => {
+    const onPollStart = ({ id }: { id: number }) => {
       setPollId(id);
     };
     const onPollEnd = () => {
