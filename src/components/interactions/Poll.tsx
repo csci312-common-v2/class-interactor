@@ -59,7 +59,7 @@ type PollAnswerResponse = {
 };
 
 type PollProps = {
-  id: string | null;
+  id: number | null;
   totalCallback?: Function;
 };
 

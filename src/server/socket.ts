@@ -151,32 +151,44 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
       socket.on("PollResponse", async (data, callback) => {
         const { id: pollId, prevChoice, newChoice } = data;
 
-        // Fetch the current counts for this poll, update counts, subtracting if there is a previous value.
-        // Perform the operations as a transaction so the update is atomic
+        // Update the poll values as an atomic transaction
         try {
-          await knex.transaction(async (trx) => {
-            // Fetch and update counts (stored as a JSON column)
-            const poll = await trx("Poll")
-              .first("values")
-              .where({ id: pollId });
-
+          const poll = await knex.transaction(async (trx) => {
             if (prevChoice) {
-              poll.values[prevChoice as string] += -1;
+              // Use Postgres JSON operations to update poll values in one query. The '||' combines json objects. :prevChoice::text is required
+              // to cast the parameter to a string for use as a key.
+              await trx("Poll")
+                .where({ id: pollId })
+                .update({
+                  values: knex.raw(
+                    `values || jsonb_build_object(:prevChoice::text, (values->>:prevChoice)::int - 1, :newChoice::text, (values->>:newChoice)::int + 1)`,
+                    { prevChoice, newChoice }
+                  ),
+                });
+            } else {
+              await trx("Poll")
+                .where({ id: pollId })
+                .update({
+                  values: knex.raw(
+                    `values || jsonb_build_object(:newChoice::text, (values->>:newChoice)::int + 1)`,
+                    { newChoice }
+                  ),
+                });
             }
-            poll.values[newChoice as string] += 1;
 
-            // Update counts as part of the transaction
-            await trx("Poll")
-              .where({ id: pollId })
-              .update({ values: poll.values });
-
-            // Update admin viewers with current results of the poll
-            io.of(`/rooms/${roomName}/admin`).emit("PollResults", poll.values);
-
-            // Let submitter know response received successfully
-            callback({ choice: newChoice });
+            // Fetch the updated values to send to any admin viewers
+            return trx("Poll").first("values").where({ id: pollId });
           });
+
+          // Update admin viewers with current results of the poll
+          io.of(`/rooms/${roomName}/admin`).emit("PollResults", poll.values);
+
+          // Let the submitter know their response was received successfully
+          callback({ choice: newChoice });
         } catch (error) {
+          if (error instanceof Error) {
+            console.log("Error", error.message);
+          }
           callback(error);
         }
       });

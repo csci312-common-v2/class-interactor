@@ -18,13 +18,13 @@ interface Props {
 
 const Console = ({ room }: Props) => {
   const socket = useSocketContext();
-  const [pollId, setPollId] = useState<string | null>(null);
+  const [pollId, setPollId] = useState<number | null>(null);
   const [pollResponses, setPollResponses] = useState(0);
 
   // Handle state updates on reconnecting to a room
   useEffect(() => {
     if (socket) {
-      const onPollStart = ({ id }: { id: string }) => {
+      const onPollStart = ({ id }: { id: number }) => {
         setPollId(id);
       };
       socket.on("PollStart", onPollStart);
