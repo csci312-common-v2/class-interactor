@@ -41,4 +41,4 @@ Initialize the database with:
 💻 npm run knex seed:run
 ```
 
-To change the environment specify `--env` after an additional two dashes (to pass the option to `knex` instead of `npm`), e.g., `💻 npm run knex migrate:latest -- --env production`.
+To change the environment specify `NODE_ENV` before the command ot specify with environment variables and knex environment to use, e.g., `💻 NODE_ENV=production npm run knex migrate:latest`.

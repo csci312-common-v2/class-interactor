@@ -4,7 +4,7 @@ import Box from "@mui/material/Box";
 import Poll from "@/components/interactions/Poll";
 import ReactionDisplay from "@/components/interactions/ReactionDisplay";
 
-const PositionedPoll = ({ pollId }: { pollId: string }) => {
+const PositionedPoll = ({ pollId }: { pollId: number }) => {
   return (
     <Box
       sx={{
@@ -26,13 +26,13 @@ const PositionedPoll = ({ pollId }: { pollId: string }) => {
 
 const Viewer = () => {
   const socket = useSocketContext();
-  const [pollId, setPollId] = useState<string | null>(null);
+  const [pollId, setPollId] = useState<number | null>(null);
   const [pollVisible, setPollVisible] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
 
-    const onPollStart = ({ id }: { id: string }) => {
+    const onPollStart = ({ id }: { id: number }) => {
       setPollId(id);
       setPollVisible(true);
     };

@@ -46,7 +46,7 @@ const Console = ({ room }: Props) => {
       socket.emit(
         "PollLaunch",
         { roomId: room.id },
-        ({ id }: { id: string }) => {
+        ({ id }: { id: number }) => {
           setPollId(id);
           setPollResponses(0);
         }
