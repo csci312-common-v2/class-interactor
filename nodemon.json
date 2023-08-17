@@ -1,5 +1,5 @@
 {
-  "watch": ["src/server/server.ts"],
+  "watch": ["src/server/server.ts", "src/server/socket.ts"],
   "ignore": [".next"],
   "exec": "ts-node --project tsconfig.server.json src/server/server.ts",
   "ext": "js ts"

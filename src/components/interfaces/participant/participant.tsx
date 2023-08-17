@@ -8,6 +8,8 @@ import Container from "@mui/material/Container";
 import Grid from "@mui/material/Unstable_Grid2";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
+import CircularProgress from "@mui/material/CircularProgress";
+import Stack from "@mui/material/Stack";
 
 interface Props {
   room: {
@@ -18,7 +20,7 @@ interface Props {
 
 const Participant = ({ room }: Props) => {
   const socket = useSocketContext();
-  const [pollId, setPollId] = useState<string | null>(null);
+  const [pollId, setPollId] = useState<number | null>(null);
 
   useEffect(() => {
     if (!socket) return;
@@ -46,7 +48,15 @@ const Participant = ({ room }: Props) => {
       </Typography>
       <Grid container spacing={2}>
         <Grid xs={12} md={2}>
-          <Typography variant="h6">Peer Instruction</Typography>
+          <Stack
+            direction="row"
+            alignItems="baseline"
+            justifyContent="space-between"
+            spacing={2}
+          >
+            <Typography variant="h6">Peer Instruction</Typography>
+            {pollId && <CircularProgress size="1rem" />}
+          </Stack>
           <Poll key={pollId} id={pollId} />
         </Grid>
         <Grid xs={12} md={5} order={{ xs: 3, sm: 2 }}>

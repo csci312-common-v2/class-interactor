@@ -44,7 +44,7 @@ describe("Server-side socket testing", () => {
     return knex.migrate.rollback().then(() => knex.migrate.latest());
 
     // We need to extend the timeout since we are starting containers with the database server
-  }, 10000);
+  }, 20000);
 
   afterAll(async () => {
     await new Promise((resolve) => {
@@ -73,7 +73,7 @@ describe("Server-side socket testing", () => {
     }
   });
 
-  describe("Room creation", () => {
+  describe("Room connection", () => {
     test.each(["", "/admin"])("Connects to valid room (%s)", (admin) => {
       const { address, port } = server.address() as AddressInfo;
       socket_client = Client(
@@ -116,6 +116,104 @@ describe("Server-side socket testing", () => {
     });
   });
 
+  describe("Polling response", () => {
+    let poll: Poll;
+    beforeEach(async () => {
+      // Add a pending question to the database
+      const [{ id: roomId }] = await knex("Room")
+        .select("id")
+        .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+      [poll] = await knex("Poll").insert(
+        {
+          roomId,
+          values: { A: 0, B: 0, C: 0, D: 0, E: 0 },
+        },
+        ["*"]
+      );
+    });
+
+    test.each([[""], ["/admin"]])(
+      "Active polls are sent on connection to room (%s)",
+      (admin) => {
+        const { address, port } = server.address() as AddressInfo;
+        socket_client = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
+          {
+            autoConnect: false,
+          }
+        );
+
+        // Everyone should receive any pending polls when they connect
+        const events = allEvents(socket_client, [
+          "PollStart",
+          "connect",
+          "RoomJoined",
+        ]).then(([poll]) => {
+          expect(poll).toMatchObject({
+            id: (poll as Poll).id,
+          });
+        });
+        socket_client.connect();
+        return events;
+      }
+    );
+
+    test("Poll response updates the counts", async () => {
+      const { address, port } = server.address() as AddressInfo;
+      socket_client = Client(
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
+        {
+          autoConnect: false,
+        }
+      );
+
+      socket_admin = Client(
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+        {
+          autoConnect: false,
+        }
+      );
+
+      const initialized = Promise.all([
+        allEvents(socket_admin, ["PollStart", "connect", "RoomJoined"]),
+        allEvents(socket_client, ["PollStart", "connect", "RoomJoined"]),
+      ]);
+
+      socket_client.connect();
+      socket_admin.connect();
+
+      // Wait for both clients to be fully initialized
+      await initialized;
+
+      // The admin channel should received updated counts
+      const admin_events = new Promise<Question[]>((resolve) => {
+        socket_admin.off("PollResults").on("PollResults", resolve);
+      }).then((values) => {
+        expect(values).toMatchObject({
+          A: 0,
+          B: 1,
+          C: 0,
+          D: 0,
+          E: 0,
+        });
+      });
+
+      // Respond to a poll as a participants
+      const participant_callbacks = new Promise((resolve) => {
+        socket_client.emit(
+          "PollResponse",
+          { id: poll.id, newChoice: "B" },
+          resolve
+        );
+      }).then((success) => {
+        expect(success).toMatchObject({ choice: "B" });
+      });
+
+      // Wait for the response and update
+      await Promise.all([admin_events, participant_callbacks]);
+    });
+  });
+
   describe("Question submission", () => {
     let question: Question;
     beforeEach(async () => {
@@ -123,7 +221,7 @@ describe("Server-side socket testing", () => {
       const [{ id: roomId }] = await knex("Room")
         .select("id")
         .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
-      question = await knex("Question").insert(
+      [question] = await knex("Question").insert(
         {
           roomId,
           question: "Test question",
