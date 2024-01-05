@@ -1,4 +1,4 @@
-import { MouseEventHandler, useEffect, useState } from "react";
+import { MouseEventHandler, useCallback, useEffect, useState } from "react";
 import { useSocketContext, Socket } from "../contexts/socket/useSocketContext";
 import Grid from "@mui/material/Unstable_Grid2";
 import Box from "@mui/material/Box";
@@ -27,15 +27,24 @@ function mergeQuestions(
   ];
 }
 
+type QuestionPanelProps = {
+  question: Question;
+  handleUpvote: () => void;
+  handleApprove?: () => void;
+};
+
 const QuestionPanel = ({
   question,
   handleUpvote,
   handleApprove,
-}: {
-  question: Question;
-  handleUpvote: MouseEventHandler;
-  handleApprove?: MouseEventHandler;
-}) => {
+}: QuestionPanelProps) => {
+  const [upvoted, setUpvoted] = useState(false);
+
+  const upvote = useCallback(() => {
+    setUpvoted(true);
+    handleUpvote();
+  }, [handleUpvote]);
+
   return (
     <Box sx={{ display: "flex", pb: 1 }}>
       <Box
@@ -46,7 +55,7 @@ const QuestionPanel = ({
           mr: 1,
         }}
       >
-        <Button sx={{ p: 0, minWidth: 0 }} onClick={handleUpvote}>
+        <Button sx={{ p: 0, minWidth: 0 }} onClick={upvote} disabled={upvoted}>
           <Typography variant="h6" component="div" sx={{ lineHeight: 1 }}>
             ▲
           </Typography>
