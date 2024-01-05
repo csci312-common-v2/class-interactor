@@ -76,4 +76,58 @@ describe("Question board", () => {
       expect(screen.getByLabelText("Ask a question")).toHaveValue("");
     });
   });
+
+  test("Upvote question triggers socket message, limited to one upvote", async () => {
+    render(<QuestionBoard />);
+
+    // Since this isn't a built-in action, we need to wrap it in act()
+    act(() => {
+      socket.emit("QuestionNew", [
+        {
+          id: 1,
+          question: "Question 1",
+          anonymous: true,
+          approved: true,
+          votes: 5,
+        },
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Question 1")).toBeInTheDocument();
+    });
+    expect(screen.getByText("5")).toBeInTheDocument();
+
+    const events = new Promise<void>((resolve) => {
+      socket.on("QuestionUpvote", ({ questionId }: { questionId: number }) => {
+        expect(questionId).toBe(1);
+        resolve();
+      });
+    });
+
+    const upvoteButton = screen.getByRole("button", { name: /▲/i });
+    fireEvent.click(upvoteButton);
+
+    // Make sure the message was received by the server
+    await events;
+
+    // Update question with new vote count
+    act(() => {
+      socket.emit("QuestionNew", [
+        {
+          id: 1,
+          question: "Question 1",
+          anonymous: true,
+          approved: true,
+          votes: 6,
+        },
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("6")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("5")).not.toBeInTheDocument();
+    expect(upvoteButton).toBeDisabled();
+  });
 });
