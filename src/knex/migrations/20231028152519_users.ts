@@ -4,9 +4,19 @@ export async function up(knex: Knex): Promise<void> {
   return knex.schema
     .createTable("User", (table) => {
       table.increments("id").primary();
-      table.string("googleId");
       table.string("name");
       table.text("email");
+    })
+    .createTable("Account", (table) => {
+      table.increments("id").primary();
+      table.string("provider").notNullable();
+      table.string("providerId").notNullable();
+      table.unique(["provider", "providerId"]);
+      table
+        .integer("userId")
+        .references("User.id")
+        .notNullable()
+        .onDelete("CASCADE");
     })
     .createTable("Roster", (table) => {
       // This is syntactic sugar for table.integer("userId").references("id").inTable("User")...

@@ -9,12 +9,12 @@ import { knex } from "@/knex/knex";
 import Room from "@/models/Room";
 
 describe("Server-side room API testing", () => {
-  beforeAll(() => {
-    // Ensure test database is initialized before an tests
-    return knex.migrate.rollback().then(() => knex.migrate.latest());
-
-    // We need to extend the timeout since we are starting containers with the database server
-  }, 20000);
+  beforeAll(
+    () =>
+      // Ensure test database is initialized before an tests
+      knex.migrate.rollback().then(() => knex.migrate.latest()),
+    20000,
+  );
 
   afterAll(async () => {
     // To prevent a warning message from jest about a process failing to exit

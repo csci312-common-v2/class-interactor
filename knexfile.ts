@@ -20,7 +20,9 @@ const config: { [key: string]: Knex.Config } = {
     client: "pg",
     connection: async () => {
       // Only import testcontainers when running in a test environment
-      const { PostgreSqlContainer } = await import("testcontainers");
+      const { PostgreSqlContainer } = await import(
+        "@testcontainers/postgresql"
+      );
 
       // Create a new container for each connection, i.e., for each test file
       // being run in parallel. These containers are automatically cleaned up

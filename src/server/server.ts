@@ -29,6 +29,8 @@ nextApp.prepare().then(() => {
   io.attach(server);
 
   app.use(express.json());
+  // This parsing is required for next-auth-related requests to work
+  app.use(express.urlencoded({ extended: true }));
   app.use(function (req, res, next) {
     req.io = io;
     next();

@@ -3,9 +3,12 @@ import BaseModel from "./BaseModel";
 import User from "./User";
 
 export default class Room extends BaseModel {
-  static get tableName() {
-    return "Room";
-  }
+  id!: number;
+  name!: string;
+  visibleId!: string;
+  users!: User[];
+
+  static tableName = "Room";
 
   static get jsonSchema() {
     return {

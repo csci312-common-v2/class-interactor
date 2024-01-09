@@ -18,7 +18,12 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": [
+      "./src/types",
+      "./node_modules/@types",
+      "./node_modules/@testing-library"
+    ],
+    "types": ["jest", "jest-dom"]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

@@ -1,28 +1,37 @@
+import { Model } from "objection";
 import BaseModel from "./BaseModel";
+import Account from "./Account";
 
 export default class User extends BaseModel {
-  static get tableName() {
-    return "User";
-  }
+  id!: number;
+  name!: string;
+  email!: string;
+  accounts!: Account[];
+
+  static tableName = "User";
 
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["googleId"],
 
       properties: {
         id: { type: "integer" },
-        googleId: { type: "string" },
         name: { type: "string" },
         email: { type: "string" },
       },
     };
   }
 
-  // Override this method to exclude googleId
-  $formatJson(json) {
-    json = super.$formatJson(json);
-    delete json.googleId;
-    return json;
-  }
+  // Making this a function instead of a static property prevents a circular dependency
+  // https://github.com/Vincit/objection.js/issues/2029#issuecomment-813048939
+  static relationMappings = () => ({
+    accounts: {
+      relation: Model.HasManyRelation,
+      modelClass: Account,
+      join: {
+        from: "User.id",
+        to: "Account.userId",
+      },
+    },
+  });
 }
