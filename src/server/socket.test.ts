@@ -262,7 +262,7 @@ describe("Server-side socket testing", () => {
       }
     );
 
-    test("Submitted questions must be approved by an admin", async () => {
+    test("Removing a submitted, approved question should remove it from all views", async () => {
       const { address, port } = server.address() as AddressInfo;
       socket_client = Client(
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
@@ -300,7 +300,7 @@ describe("Server-side socket testing", () => {
       };
 
       // The admin channel should receive the question for approval
-      const admin_events = new Promise<Question[]>((resolve) => {
+      const admin_question_events = new Promise<Question[]>((resolve) => {
         socket_admin.off("QuestionNew").on("QuestionNew", resolve);
       }).then((questions) => {
         expect(questions).toHaveLength(1);
@@ -309,7 +309,7 @@ describe("Server-side socket testing", () => {
       });
 
       // Send in a new question as a participant
-      const participant_callbacks = new Promise((resolve) => {
+      const participant_question_callbacks = new Promise((resolve) => {
         socket_client.emit(
           "QuestionAsk",
           { question: "A new question", anonymous: true },
@@ -321,12 +321,12 @@ describe("Server-side socket testing", () => {
 
       // Wait for the question to be asked and sent for approval
       const [questionId] = await Promise.all([
-        admin_events,
-        participant_callbacks,
+        admin_question_events,
+        participant_question_callbacks,
       ]);
 
       // If the admin approves the question it should be sent to the participant(s)
-      const participant_events = new Promise<Question[]>((resolve) => {
+      const participant_approve_events = new Promise<Question[]>((resolve) => {
         socket_client.off("QuestionNew").on("QuestionNew", resolve);
       }).then((questions) => {
         expect(questions).toHaveLength(1);
@@ -336,14 +336,24 @@ describe("Server-side socket testing", () => {
         });
       });
 
-      const admin_callbacks = new Promise<Question>((resolve) => {
+      const admin_approve_callbacks = new Promise<Question>((resolve) => {
         socket_admin.emit("QuestionApprove", { questionId }, resolve);
       }).then((question) => {
         expect(question).toMatchObject({ ...question_matcher, approved: true });
       });
 
       // Wait for the question to be approved and sent to the participant(s)
-      return Promise.all([participant_events, admin_callbacks]);
+      await Promise.all([participant_approve_events, admin_approve_callbacks]);
+
+      // If the admin removes the question it should be removed from all views
+      const admin_remove_callbacks = new Promise<Question>((resolve) => {
+        socket_admin.emit("QuestionRemove", { questionId }, resolve);
+      }).then((removedQuestionId) => {
+        expect(typeof removedQuestionId).toBe("number");
+      });
+
+      // Wait for the question to be removed and confirmed by the admin
+      return Promise.all([admin_remove_callbacks]);
     });
   });
 });
