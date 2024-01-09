@@ -61,7 +61,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           if (polls.length && !polls[0].ended_at) {
             socket.emit("PollStart", { id: polls[0].id });
           }
-        })
+        }),
     );
 
     if (admin) {
@@ -75,9 +75,9 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           .then((questions) => {
             socket.emit(
               "QuestionNew",
-              questions.map(({ roomId: dropRoomId, ...question }) => question)
+              questions.map(({ roomId: dropRoomId, ...question }) => question),
             );
-          })
+          }),
       );
 
       socket.on("PollLaunch", async (data, callback) => {
@@ -125,6 +125,24 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         callback(question);
       });
 
+      socket.on("QuestionRemove", async ({ questionId }, callback) => {
+        // Remove question
+        const [question] = await knex("Question").where({ id: questionId });
+
+        if (question) {
+          await knex("Question").where({ id: question.id }).delete();
+          // Remove question from all viewers
+          // Participants
+          io.of(`/rooms/${roomName}`).emit("QuestionRemoved", question.id);
+          // Admin
+          socket.emit("QuestionRemoved", question.id);
+
+          if (typeof callback === "function") {
+            callback(question.id);
+          }
+        }
+      });
+
       socket.on("QuestionClear", async ({}) => {
         // Delete all questions
         await knex("Question").where({ roomId }).delete();
@@ -143,9 +161,9 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           .then((questions) => {
             socket.emit(
               "QuestionNew",
-              questions.map(({ roomId: dropRoomId, ...question }) => question)
+              questions.map(({ roomId: dropRoomId, ...question }) => question),
             );
-          })
+          }),
       );
 
       socket.on("PollResponse", async (data, callback) => {
@@ -162,7 +180,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
                 .update({
                   values: knex.raw(
                     `values || jsonb_build_object(:prevChoice::text, (values->>:prevChoice)::int - 1, :newChoice::text, (values->>:newChoice)::int + 1)`,
-                    { prevChoice, newChoice }
+                    { prevChoice, newChoice },
                   ),
                 });
             } else {
@@ -171,7 +189,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
                 .update({
                   values: knex.raw(
                     `values || jsonb_build_object(:newChoice::text, (values->>:newChoice)::int + 1)`,
-                    { newChoice }
+                    { newChoice },
                   ),
                 });
             }
