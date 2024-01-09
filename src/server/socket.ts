@@ -125,6 +125,18 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         callback(question);
       });
 
+      socket.on("QuestionRemove", async ({ questionId }, callback) => {
+        // Remove question
+        const [question] = await knex("Question").where({ id: questionId });
+
+        if (question) {
+          await knex("Question").where({ id: question.id }).delete();
+          // Remove question from all viewers
+          io.of(`/rooms/${roomName}`).emit("QuestionRemoved", question);
+          callback(question);
+        }
+      });
+
       socket.on("QuestionClear", async ({}) => {
         // Delete all questions
         await knex("Question").where({ roomId }).delete();

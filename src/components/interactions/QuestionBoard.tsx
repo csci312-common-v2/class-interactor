@@ -9,6 +9,7 @@ import Checkbox from "@mui/material/Checkbox";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import AddTaskIcon from "@mui/icons-material/AddTask";
+import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 
 function mergeQuestions(
   existing: Question[],
@@ -31,12 +32,14 @@ type QuestionPanelProps = {
   question: Question;
   handleUpvote: () => void;
   handleApprove?: () => void;
+  handleRemove?: () => void;
 };
 
 const QuestionPanel = ({
   question,
   handleUpvote,
   handleApprove,
+  handleRemove,
 }: QuestionPanelProps) => {
   const [upvoted, setUpvoted] = useState(false);
 
@@ -72,6 +75,12 @@ const QuestionPanel = ({
           Asked by anonymous
         </Typography>
       </Box>
+      {handleRemove && (
+        <IconButton aria-label="remove" color="error" onClick={handleRemove}>
+          <RemoveCircleOutlineIcon />
+        </IconButton>
+      )}
+
       {handleApprove && !question.approved && (
         <IconButton
           aria-label="approve"
@@ -150,16 +159,24 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
         setQuestions((existing) => mergeQuestions(existing, incoming));
       };
 
+      const onQuestionRemoved = (removedQuestion: Question) => {
+        setQuestions((existing) =>
+          existing.filter((q) => q.id !== removedQuestion.id)
+        );
+      };
+
       const clearQuestions = () => {
         setQuestions([]);
       };
 
       socket.on("QuestionNew", onQuestion);
+      socket.on("QuestionRemoved", onQuestionRemoved);
       socket.on("QuestionClear", clearQuestions);
 
       // Make sure to remove listener when component is unmounted
       return () => {
         socket.off("QuestionNew", onQuestion);
+        socket.off("QuestionRemoved", onQuestionRemoved);
         socket.off("QuestionClear", clearQuestions);
       };
     }
@@ -189,6 +206,24 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
       }
     : undefined;
 
+  const handleRemove = admin
+    ? (questionId: number) => {
+        if (socket) {
+          socket.emit(
+            "QuestionRemove",
+            { questionId },
+            (removedQuestion?: Question) => {
+              if (removedQuestion) {
+                setQuestions((existing) =>
+                  existing.filter((q) => q.id !== removedQuestion.id)
+                );
+              }
+            }
+          );
+        }
+      }
+    : undefined;
+
   // Sort in descending order of date
   const sortedQuestions = [...questions].sort(
     (a, b) =>
@@ -208,8 +243,9 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
           <QuestionPanel
             key={question.id}
             question={question}
-            handleApprove={handleApprove && (() => handleApprove(question.id))}
             handleUpvote={() => handleUpvote(question.id)}
+            handleApprove={handleApprove && (() => handleApprove(question.id))}
+            handleRemove={handleRemove && (() => handleRemove(question.id))}
           />
         ))}
       </Box>
