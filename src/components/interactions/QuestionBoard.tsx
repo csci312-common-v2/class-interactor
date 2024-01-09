@@ -159,9 +159,9 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
         setQuestions((existing) => mergeQuestions(existing, incoming));
       };
 
-      const onQuestionRemoved = (removedQuestion: Question) => {
+      const onQuestionRemoved = (removedQuestionId: Number) => {
         setQuestions((existing) =>
-          existing.filter((q) => q.id !== removedQuestion.id)
+          existing.filter((q) => q.id !== removedQuestionId)
         );
       };
 
@@ -209,17 +209,7 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
   const handleRemove = admin
     ? (questionId: number) => {
         if (socket) {
-          socket.emit(
-            "QuestionRemove",
-            { questionId },
-            (removedQuestion?: Question) => {
-              if (removedQuestion) {
-                setQuestions((existing) =>
-                  existing.filter((q) => q.id !== removedQuestion.id)
-                );
-              }
-            }
-          );
+          socket.emit("QuestionRemove", { questionId });
         }
       }
     : undefined;

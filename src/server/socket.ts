@@ -132,8 +132,14 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         if (question) {
           await knex("Question").where({ id: question.id }).delete();
           // Remove question from all viewers
-          io.of(`/rooms/${roomName}`).emit("QuestionRemoved", question);
-          callback(question);
+          // Participants
+          io.of(`/rooms/${roomName}`).emit("QuestionRemoved", question.id);
+          // Admin
+          socket.emit("QuestionRemoved", question.id);
+
+          if (typeof callback === "function") {
+            callback(question.id);
+          }
         }
       });
 
