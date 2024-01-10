@@ -19,8 +19,8 @@ function allEvents(socket: ClientSocket, events: string[]) {
       (event) =>
         new Promise((resolve) => {
           socket.on(event, resolve);
-        })
-    )
+        }),
+    ),
   );
 }
 
@@ -80,7 +80,7 @@ describe("Server-side socket testing", () => {
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
         {
           autoConnect: false,
-        }
+        },
       );
 
       // Register event handlers before we connect so no events are missed
@@ -88,7 +88,7 @@ describe("Server-side socket testing", () => {
         () => {
           // Make sure all expected events have been received
           expect(socket_client.connected).toBe(true);
-        }
+        },
       );
 
       socket_client.connect();
@@ -107,7 +107,7 @@ describe("Server-side socket testing", () => {
       const events = allEvents(socket_client, ["connect_error"]).then(
         ([error]) => {
           expect(error).toBeInstanceOf(Error);
-        }
+        },
       );
 
       socket_client.connect();
@@ -128,7 +128,7 @@ describe("Server-side socket testing", () => {
           roomId,
           values: { A: 0, B: 0, C: 0, D: 0, E: 0 },
         },
-        ["*"]
+        ["*"],
       );
     });
 
@@ -140,7 +140,7 @@ describe("Server-side socket testing", () => {
           `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
           {
             autoConnect: false,
-          }
+          },
         );
 
         // Everyone should receive any pending polls when they connect
@@ -155,7 +155,7 @@ describe("Server-side socket testing", () => {
         });
         socket_client.connect();
         return events;
-      }
+      },
     );
 
     test("Poll response updates the counts", async () => {
@@ -164,14 +164,14 @@ describe("Server-side socket testing", () => {
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
         {
           autoConnect: false,
-        }
+        },
       );
 
       socket_admin = Client(
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
         {
           autoConnect: false,
-        }
+        },
       );
 
       const initialized = Promise.all([
@@ -203,7 +203,7 @@ describe("Server-side socket testing", () => {
         socket_client.emit(
           "PollResponse",
           { id: poll.id, newChoice: "B" },
-          resolve
+          resolve,
         );
       }).then((success) => {
         expect(success).toMatchObject({ choice: "B" });
@@ -227,7 +227,7 @@ describe("Server-side socket testing", () => {
           question: "Test question",
           anonymous: true,
         },
-        ["*"]
+        ["*"],
       );
     });
 
@@ -242,7 +242,7 @@ describe("Server-side socket testing", () => {
           `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
           {
             autoConnect: false,
-          }
+          },
         );
 
         // Participants only see approved questions, administrators see all
@@ -259,7 +259,7 @@ describe("Server-side socket testing", () => {
         });
         socket_client.connect();
         return events;
-      }
+      },
     );
 
     test("Removing a submitted, approved question should remove it from all views", async () => {
@@ -268,14 +268,14 @@ describe("Server-side socket testing", () => {
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
         {
           autoConnect: false,
-        }
+        },
       );
 
       socket_admin = Client(
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
         {
           autoConnect: false,
-        }
+        },
       );
 
       const initialized = Promise.all([
@@ -313,7 +313,7 @@ describe("Server-side socket testing", () => {
         socket_client.emit(
           "QuestionAsk",
           { question: "A new question", anonymous: true },
-          resolve
+          resolve,
         );
       }).then((success) => {
         expect(success).toBe(true);

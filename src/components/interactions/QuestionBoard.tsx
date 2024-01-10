@@ -13,7 +13,7 @@ import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
 
 function mergeQuestions(
   existing: Question[],
-  incoming: Question[]
+  incoming: Question[],
 ): Question[] {
   // incoming questions override existing questions (but original order is preserved)
   const seen = new Set(incoming.map((q) => q.id));
@@ -109,7 +109,7 @@ const QuestionForm = ({ socket }: { socket?: Socket }) => {
             setQuestion("");
             //setAnonymous(false);
           }
-        }
+        },
       );
     }
   };
@@ -161,7 +161,7 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
 
       const onQuestionRemoved = (removedQuestionId: Number) => {
         setQuestions((existing) =>
-          existing.filter((q) => q.id !== removedQuestionId)
+          existing.filter((q) => q.id !== removedQuestionId),
         );
       };
 
@@ -197,10 +197,10 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
             (question?: Question) => {
               if (question) {
                 setQuestions((existing) =>
-                  mergeQuestions(existing, [question])
+                  mergeQuestions(existing, [question]),
                 );
               }
-            }
+            },
           );
         }
       }
@@ -217,7 +217,7 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
   // Sort in descending order of date
   const sortedQuestions = [...questions].sort(
     (a, b) =>
-      new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf()
+      new Date(b.created_at).valueOf() - new Date(a.created_at).valueOf(),
   );
 
   return (

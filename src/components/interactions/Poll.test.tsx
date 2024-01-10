@@ -1,14 +1,7 @@
 import Poll from "./Poll";
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  act,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
 import MockedSocket from "socket.io-mock";
-import exp from "constants";
 type MockedSocket = typeof MockedSocket;
 
 // Mock the socket context used to obtain the client socket
@@ -58,7 +51,7 @@ describe("Polling", () => {
             });
             callback({ choice: "E" });
             resolve(response);
-          }
+          },
         );
       });
 
@@ -70,7 +63,7 @@ describe("Polling", () => {
       await waitFor(() => {
         expect(screen.getByRole("button", { name: "E" })).toHaveAttribute(
           "aria-pressed",
-          "true"
+          "true",
         );
       });
 
@@ -81,7 +74,7 @@ describe("Polling", () => {
             "PollResponse",
             (
               response: { id: number; newChoice: string },
-              callback: Function
+              callback: Function,
             ) => {
               expect(response).toMatchObject({
                 id: 2,
@@ -90,7 +83,7 @@ describe("Polling", () => {
               });
               callback({ choice: "C" });
               resolve(response);
-            }
+            },
           );
       });
 
@@ -102,12 +95,12 @@ describe("Polling", () => {
       await waitFor(() => {
         expect(screen.getByRole("button", { name: "C" })).toHaveAttribute(
           "aria-pressed",
-          "true"
+          "true",
         );
       });
       expect(screen.getByRole("button", { name: "E" })).toHaveAttribute(
         "aria-pressed",
-        "false"
+        "false",
       );
     });
   });

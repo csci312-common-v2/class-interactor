@@ -61,7 +61,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           if (polls.length && !polls[0].ended_at) {
             socket.emit("PollStart", { id: polls[0].id });
           }
-        })
+        }),
     );
 
     if (admin) {
@@ -75,9 +75,9 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           .then((questions) => {
             socket.emit(
               "QuestionNew",
-              questions.map(({ roomId: dropRoomId, ...question }) => question)
+              questions.map(({ roomId: dropRoomId, ...question }) => question),
             );
-          })
+          }),
       );
 
       socket.on("PollLaunch", async (data, callback) => {
@@ -161,9 +161,9 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           .then((questions) => {
             socket.emit(
               "QuestionNew",
-              questions.map(({ roomId: dropRoomId, ...question }) => question)
+              questions.map(({ roomId: dropRoomId, ...question }) => question),
             );
-          })
+          }),
       );
 
       socket.on("PollResponse", async (data, callback) => {
@@ -180,7 +180,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
                 .update({
                   values: knex.raw(
                     `values || jsonb_build_object(:prevChoice::text, (values->>:prevChoice)::int - 1, :newChoice::text, (values->>:newChoice)::int + 1)`,
-                    { prevChoice, newChoice }
+                    { prevChoice, newChoice },
                   ),
                 });
             } else {
@@ -189,7 +189,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
                 .update({
                   values: knex.raw(
                     `values || jsonb_build_object(:newChoice::text, (values->>:newChoice)::int + 1)`,
-                    { newChoice }
+                    { newChoice },
                   ),
                 });
             }
