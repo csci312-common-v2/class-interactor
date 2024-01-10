@@ -20,7 +20,8 @@ router.post(authenticated, async (req, res) => {
       ],
     },
     {
-      // This tells `insertGraph` to not insert new languages.
+      // This tells `insertGraph` to not insert new users, but instead link to existing
+      // users.
       relate: true,
     },
   );
