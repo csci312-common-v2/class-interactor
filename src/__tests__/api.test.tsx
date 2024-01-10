@@ -57,6 +57,7 @@ describe("Class Interactor API", () => {
             },
             body: JSON.stringify(newRoom),
           });
+          expect(res.status).toBe(200);
           const resArticle = await res.json();
           expect(resArticle).toMatchObject({
             ...newRoom,

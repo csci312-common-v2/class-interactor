@@ -1,11 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
 import { createRouter } from "next-connect";
 import { v4 as uuidv4 } from "uuid";
-import {
-  onError,
-  authenticated,
-  AuthenticatedNextApiRequest,
-} from "@/server/middleware";
+import { onError, authenticated } from "@/server/middleware";
 import Room from "@/models/Room";
 
 const router = createRouter<NextApiRequest, NextApiResponse>();
@@ -18,7 +14,7 @@ router.post(authenticated, async (req, res) => {
       visibleId: uuidv4(),
       users: [
         {
-          id: (req as AuthenticatedNextApiRequest).user.id,
+          id: req.user!.id,
           role: "administrator",
         },
       ],
