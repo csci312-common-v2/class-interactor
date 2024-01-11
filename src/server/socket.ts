@@ -64,6 +64,20 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         }),
     );
 
+    // Send all reminders when a client newly connect
+    // NOTE: This will probably be moved once scheduling reminders is implemented
+    connectionQueries.push(
+      knex
+        .table("Reminder")
+        .where({ roomId })
+        .then((reminders) => {
+          socket.emit(
+            "ReminderSend",
+            reminders.map(({ roomId: dropRoomId, ...reminder }) => reminder),
+          );
+        }),
+    );
+
     if (admin) {
       // Administration interface
 
@@ -80,6 +94,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           }),
       );
 
+      // Question Poll
       socket.on("PollLaunch", async (data, callback) => {
         // Create a new poll in the database with default options and zero counts. The `['id']` returns
         // the corresponding inserted values.
@@ -149,6 +164,33 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
 
         io.of(`/rooms/${roomName}`).emit("QuestionClear");
         socket.emit("QuestionClear");
+      });
+
+      // Reminder Board
+      socket.on("ReminderSend", async (data, callback) => {
+        const [{ roomId: dropRoomId, ...newReminder }] = await knex
+          .table("Reminder")
+          .insert({ roomId, ...data }, ["*"]);
+
+        io.of(`/rooms/${roomName}`).emit("ReminderSend", [newReminder]);
+        socket.emit("ReminderSend", [newReminder]);
+        callback(true);
+      });
+
+      socket.on("ReminderRemove", async ({ reminderId }, callback) => {
+        // Remove reminder
+        const [reminder] = await knex("Reminder").where({ id: reminderId });
+
+        if (reminder) {
+          await knex("Reminder").where({ id: reminder.id }).delete();
+
+          io.of(`/rooms/${roomName}`).emit("ReminderRemoved", reminder.id);
+          socket.emit("ReminderRemoved", reminder.id);
+
+          if (typeof callback === "function") {
+            callback(reminder.id);
+          }
+        }
       });
     } else {
       // Viewer interface

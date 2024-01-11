@@ -356,4 +356,172 @@ describe("Server-side socket testing", () => {
       return Promise.all([admin_remove_callbacks]);
     });
   });
+
+  describe("Reminder posting", () => {
+    let reminder: Reminder;
+    beforeEach(async () => {
+      // Add a reminder to the database
+      const [{ id: roomId }] = await knex("Room")
+        .select("id")
+        .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+
+      // NOTE: This will change as start_time and end_time are incorporated
+      [reminder] = await knex("Reminder").insert(
+        {
+          roomId,
+          title: "Test reminder",
+          description: "Test description",
+          start_time: null,
+          end_time: null,
+        },
+        ["*"],
+      );
+    });
+
+    test.each([
+      ["", 1],
+      ["/admin", 1],
+    ])(
+      "Active reminders are sent on connection to room (%s)",
+      (admin, numReminders) => {
+        const { address, port } = server.address() as AddressInfo;
+        socket_client = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        // Participants and admin see all reminders
+        const events = allEvents(socket_client, [
+          "ReminderSend",
+          "connect",
+          "RoomJoined",
+        ]).then(([reminders]) => {
+          expect(reminders).toHaveLength(numReminders);
+          if (numReminders > 0) {
+            const [reminder, ...rest] = reminders as Reminder[];
+            expect(reminder).not.toHaveProperty("roomId");
+          }
+        });
+        socket_client.connect();
+        return events;
+      },
+    );
+
+    test("Removing an active reminder should remove it from all views", async () => {
+      const { address, port } = server.address() as AddressInfo;
+      socket_client = Client(
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
+        {
+          autoConnect: false,
+        },
+      );
+
+      socket_admin = Client(
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+        {
+          autoConnect: false,
+        },
+      );
+
+      const initialized = Promise.all([
+        allEvents(socket_admin, ["ReminderSend", "connect", "RoomJoined"]),
+        allEvents(socket_client, ["ReminderSend", "connect", "RoomJoined"]),
+      ]);
+
+      socket_client.connect();
+      socket_admin.connect();
+
+      // Wait for both clients to be fully initialized
+      await initialized;
+
+      // Specify expected shape of the reminder object using Jest matchers
+      // NOTE: Should check start_time and end_time types??
+      // Should we assert that end_time is after start time here?
+      const reminder_matcher = {
+        id: expect.any(Number),
+        title: "A new reminder",
+        description: expect.any(String),
+      };
+
+      // If the admin sends a reminder it should be sent to admin and participants(s)
+      // Admin sends a reminder
+      const admin_send_callbacks = new Promise<Reminder>((resolve) => {
+        socket_admin.emit(
+          "ReminderSend",
+          {
+            title: "A new reminder",
+            description: "A new description",
+            start_time: null,
+            end_time: null,
+          },
+          resolve,
+        );
+      }).then((success) => {
+        expect(success).toBe(true);
+      });
+
+      // Admin and participant see reminder
+      const admin_remind_events = new Promise<Reminder[]>((resolve) => {
+        socket_admin.off("ReminderSend").on("ReminderSend", resolve);
+      }).then((reminders) => {
+        expect(reminders).toHaveLength(1);
+        expect(reminders[0]).toMatchObject({ ...reminder_matcher });
+        return reminders[0].id;
+      });
+
+      const participant_remind_events = new Promise<Reminder[]>((resolve) => {
+        socket_client.off("ReminderSend").on("ReminderSend", resolve);
+      }).then((reminders) => {
+        expect(reminders).toHaveLength(1);
+        expect(reminders[0]).toMatchObject({ ...reminder_matcher });
+        return reminders[0].id;
+      });
+
+      // Wait for the reminder to be send to admin and all participants
+      const [status, adminReminderId, participantReminderId] =
+        await Promise.all([
+          admin_send_callbacks,
+          admin_remind_events,
+          participant_remind_events,
+        ]);
+
+      // Ensure the same reminder was sent to admin and participants
+      expect(adminReminderId).toBe(participantReminderId);
+
+      const removedReminderId = adminReminderId;
+
+      // If the admin removes the reminder, it should be removed from all views
+      const admin_remove_callbacks = new Promise<Reminder>((resolve) => {
+        socket_admin.emit(
+          "ReminderRemove",
+          { reminderId: removedReminderId },
+          resolve,
+        );
+      }).then((removedReminderId) => {
+        expect(typeof removedReminderId).toBe("number");
+      });
+
+      // Reminder is removed from admin and participant views
+      const admin_remove_events = new Promise<Reminder[]>((resolve) => {
+        socket_admin.off("ReminderRemoved").on("ReminderRemoved", resolve);
+      }).then((reminder) => {
+        expect(reminder).toBe(removedReminderId);
+      });
+
+      const participant_remove_events = new Promise<Reminder[]>((resolve) => {
+        socket_client.off("ReminderRemoved").on("ReminderRemoved", resolve);
+      }).then((reminder) => {
+        expect(reminder).toBe(removedReminderId);
+      });
+
+      // Wait for the reminder to be removed and confirmed by the admin
+      return Promise.all([
+        admin_remove_callbacks,
+        admin_remove_events,
+        participant_remove_events,
+      ]);
+    });
+  });
 });
