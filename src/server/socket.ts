@@ -1,6 +1,9 @@
 import * as socketio from "socket.io";
-import { knex } from "../knex/knex";
+import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
+import { parse } from "cookie";
+import { knex } from "@/knex/knex";
+import Room from "@/models/Room";
 
 // Develop from route description using /rooms/:rid/:admin?
 // http://forbeslindesay.github.io/express-route-tester/
@@ -8,8 +11,6 @@ const roomRegEx = /^\/rooms\/(?:([^\/]+?))(?:\/([^\/]+?))?\/?$/i;
 
 export function getNamespace(io: socketio.Server) {
   return io.of(async (name, auth, next) => {
-    // Develop from route description using /rooms/:rid/:admin?
-    // http://forbeslindesay.github.io/express-route-tester/
     const res = roomRegEx.exec(name);
     if (!res) {
       // Invalid room name, so reject the connection
@@ -32,7 +33,46 @@ export function getNamespace(io: socketio.Server) {
 }
 
 export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
-  // TODO: Add authentication middleware
+  room.use(async (socket, next) => {
+    const roomParams = roomRegEx.exec(socket.nsp.name);
+    if (!roomParams) {
+      next(new Error("Invalid room name"));
+    } else if (roomParams[2] === "admin") {
+      // Attempting an administrative connection
+
+      // Then next-auth cookies (containing the token should be passed with handshake request). Parse
+      // the cookies and extract (and verify) the token and user id encoded within.
+      const cookies = socket.request.headers.cookie
+        ? parse(socket.request.headers.cookie)
+        : {};
+      const token = await getToken({
+        req: Object.assign(socket.request, { cookies }),
+      });
+      if (!token) {
+        next(new Error("Unable to authenticate user"));
+        return;
+      }
+
+      // Is this user an administrator of the room?
+      const [administeredRoom] = await Room.query()
+        .where({ visibleId: roomParams[1] })
+        .withGraphFetched("users(filterIdAndRole)")
+        .modifiers({
+          filterIdAndRole(builder) {
+            builder.where({ id: token.id, role: "administrator" });
+          },
+        });
+
+      if (administeredRoom.users.length === 0) {
+        next(new Error("User is not an administrator of this room"));
+        return;
+      }
+
+      next();
+    } else {
+      next(); // Allow all non-administrative connections
+    }
+  });
 
   room.on("connection", async (socket: socketio.Socket) => {
     console.log(`Connected to ${socket.nsp.name}`);
