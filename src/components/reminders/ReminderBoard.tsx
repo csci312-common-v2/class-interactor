@@ -101,14 +101,14 @@ const ReminderPanel = ({
             <Box display="block">
               {startTime ? (
                 <Box>
-                  <Typography variant="caption">
+                  <Typography data-testid="start-time-label" variant="caption">
                     Start Time: {formatDateTime.format(startTime)}
                   </Typography>
                 </Box>
               ) : null}
               {endTime ? (
                 <Box>
-                  <Typography variant="caption">
+                  <Typography data-testid="end-time-label" variant="caption">
                     End Time: {formatDateTime.format(endTime)}
                   </Typography>
                 </Box>
