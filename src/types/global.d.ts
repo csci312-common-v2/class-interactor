@@ -20,7 +20,7 @@ declare global {
     id: number;
     title: string;
     description?: string;
-    start_time: string;
-    end_time?: string;
+    start_time: Date;
+    end_time?: Date | null;
   }
 }

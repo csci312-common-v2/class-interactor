@@ -29,7 +29,7 @@ describe("Reminder board", () => {
     jest.resetAllMocks();
   });
 
-  test("Render ReminderBoard component", async () => {
+  test("Render participant ReminderBoard component", async () => {
     render(<ReminderBoard />);
 
     // Since this isn't a built-in action, we need to wrap it in act()
@@ -39,7 +39,7 @@ describe("Reminder board", () => {
           id: 1,
           title: "Reminder 1",
           description: "",
-          start_time: null,
+          start_time: new Date(Date.now()),
           end_time: null,
         },
       ]);
@@ -50,7 +50,7 @@ describe("Reminder board", () => {
     });
   });
 
-  test("Sending a reminder from admin triggers a socket message", async () => {
+  test("Sending a reminder from admin without start time triggers a socket message", async () => {
     render(<ReminderBoard admin />);
 
     const events = new Promise((resolve) => {
@@ -58,9 +58,11 @@ describe("Reminder board", () => {
         expect(reminder).toMatchObject({
           title: "Reminder 2",
           description: "",
-          start_time: null,
-          end_time: null,
         });
+        // Modify the reminder before resolving the promise
+        reminder.start_time = new Date();
+        reminder.end_time = null;
+
         callback(true);
         resolve(reminder);
       });
@@ -71,6 +73,8 @@ describe("Reminder board", () => {
     expect(postButton).toBeDisabled();
 
     // Fill in the form and submit the new reminder
+
+    // Insert a title
     const title_input = screen.getByLabelText("Title");
     fireEvent.change(title_input, { target: { value: "Reminder 2" } });
 
@@ -79,7 +83,13 @@ describe("Reminder board", () => {
     fireEvent.click(postButton);
 
     // Make sure the message was received by the server
-    await events;
+    const reminder = await events;
+    expect(reminder).toMatchObject({
+      title: "Reminder 2",
+      description: "",
+      start_time: expect.any(Date),
+      end_time: null,
+    });
 
     await waitFor(() => {
       expect(screen.getByLabelText("Title")).toHaveValue("");
