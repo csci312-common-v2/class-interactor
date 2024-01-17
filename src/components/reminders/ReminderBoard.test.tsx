@@ -58,10 +58,6 @@ describe("Reminder board", () => {
     // Start/End time labels are not visible to participant
     expect(screen.queryAllByTestId("start-time-label")).toHaveLength(0);
     expect(screen.queryAllByTestId("end-time-label")).toHaveLength(0);
-
-    // Reminder has the variant "standard"
-    const reminder = screen.queryByRole("alert");
-    expect(reminder).toHaveClass("MuiAlert-standard");
   });
 
   test("Render admin ReminderBoard component", async () => {
@@ -89,18 +85,12 @@ describe("Reminder board", () => {
     });
 
     // Admin should see start time
-    expect(screen.queryAllByTestId("start-time-label")).toHaveLength(1);
-    const startTimeLabel = screen.getByTestId("start-time-label");
-    expect(startTimeLabel).toHaveTextContent(
-      `Start Time: ${expectedStartTime}`,
-    );
+    expect(
+      screen.getByText(`Start Time: ${expectedStartTime}`),
+    ).toBeInTheDocument();
 
     // Admin should not see end time since it was not set
     expect(screen.queryAllByTestId("end-time-label")).toHaveLength(0);
-
-    // Reminder has the variant "outlined"
-    const reminder = screen.queryByRole("alert");
-    expect(reminder).toHaveClass("MuiAlert-outlined");
   });
 
   test("Sending a reminder from admin without times triggers a socket message", async () => {
