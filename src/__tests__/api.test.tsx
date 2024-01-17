@@ -9,11 +9,8 @@ import { testApiHandler } from "next-test-api-route-handler";
 import { knex } from "../knex/knex";
 import roomsEndpoint from "../pages/api/rooms/index";
 import { getServerSideProps as consoleGetServerSideProps } from "@/pages/rooms/[rid]/console";
-import type {
-  GetServerSidePropsContext,
-  ParsedUrlQuery,
-  PreviewData,
-} from "next";
+import type { ParsedUrlQuery } from "querystring";
+import type { GetServerSidePropsContext, PreviewData } from "next";
 
 jest.mock("next-auth/next");
 const mockedGetServerSession = jest.mocked(getServerSession);

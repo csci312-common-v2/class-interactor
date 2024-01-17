@@ -40,7 +40,12 @@ export const getServerSideProps = (async (context) => {
       },
     };
   } else {
-    return { props: { room } };
+    return {
+      redirect: {
+        destination: `/?${new URLSearchParams({ error: "InvalidRoom" })}`,
+        permanent: false,
+      },
+    };
   }
 }) satisfies GetServerSideProps<{ room: RoomProp }>;
 
