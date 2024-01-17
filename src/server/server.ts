@@ -28,13 +28,9 @@ nextApp.prepare().then(() => {
   const io: socketio.Server = new socketio.Server();
   io.attach(server);
 
+  // These parsers is required for Next and next-auth-related requests to work
   app.use(express.json());
-  // This parsing is required for next-auth-related requests to work
   app.use(express.urlencoded({ extended: true }));
-  app.use(function (req, res, next) {
-    req.io = io;
-    next();
-  });
 
   // Bind socket listeners to dynamic namespaces
   const room = getNamespace(io);

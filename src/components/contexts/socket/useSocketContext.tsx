@@ -16,7 +16,10 @@ const SocketProvider = ({ roomId, children, admin = false }: Props) => {
   useEffect(() => {
     if (!roomId) return;
     const newSocket = SocketIO(`/rooms/${roomId}` + (admin ? "/admin" : ""));
-    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      setSocket(newSocket);
+    });
 
     // In development, with strict mode, the component is mounted twice,
     // so we expect two attempts to connect with a cleanup (disconnect) in
