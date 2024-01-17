@@ -9,8 +9,13 @@ import * as http from "http";
 import { AddressInfo } from "net";
 import { Server } from "socket.io";
 import { default as Client, Socket as ClientSocket } from "socket.io-client";
+import { getToken } from "next-auth/jwt";
 import { knex } from "@/knex/knex";
 import { getNamespace, bindListeners } from "./socket";
+
+// Mock the NextAuth package
+jest.mock("next-auth/jwt");
+const mockedGetToken = jest.mocked(getToken);
 
 function allEvents(socket: ClientSocket, events: string[]) {
   // Return a promise that resolves when all events have been received
@@ -71,13 +76,21 @@ describe("Server-side socket testing", () => {
     if (socket_admin && socket_admin.connected) {
       socket_admin.disconnect();
     }
+
+    // Clear all mocks between tests
+    jest.resetAllMocks();
   });
 
-  describe("Room connection", () => {
-    test.each(["", "/admin"])("Connects to valid room (%s)", (admin) => {
+  describe("Without authenticated user", () => {
+    beforeEach(() => {
+      // Mock getToken to simulate an unauthenticated connection
+      mockedGetToken.mockResolvedValue(null);
+    });
+
+    test("Unauthenticated user can connect to participant channel", () => {
       const { address, port } = server.address() as AddressInfo;
       socket_client = Client(
-        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
         {
           autoConnect: false,
         },
@@ -98,43 +111,65 @@ describe("Server-side socket testing", () => {
       return events;
     });
 
-    test("Rejects an invalid room", () => {
+    test("Unauthetnicated user can't connect to admin channel", () => {
       const { address, port } = server.address() as AddressInfo;
-      socket_client = Client(`http://[${address}]:${port}/junk`, {
-        autoConnect: false,
-      });
-
-      const events = allEvents(socket_client, ["connect_error"]).then(
-        ([error]) => {
-          expect(error).toBeInstanceOf(Error);
+      socket_client = Client(
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+        {
+          autoConnect: false,
         },
       );
+
+      const events = new Promise((resolve, reject) => {
+        socket_client.on("connect_error", (error) => {
+          reject(error);
+        });
+      });
 
       socket_client.connect();
 
-      return events;
-    });
-  });
-
-  describe("Polling response", () => {
-    let poll: Poll;
-    beforeEach(async () => {
-      // Add a pending question to the database
-      const [{ id: roomId }] = await knex("Room")
-        .select("id")
-        .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
-      [poll] = await knex("Poll").insert(
-        {
-          roomId,
-          values: { A: 0, B: 0, C: 0, D: 0, E: 0 },
-        },
-        ["*"],
+      return expect(events).rejects.toEqual(
+        new Error("Unable to authenticate user"),
       );
     });
 
-    test.each([[""], ["/admin"]])(
-      "Active polls are sent on connection to room (%s)",
-      (admin) => {
+    test("User that is not the administrator can't connect to the admin channel", () => {
+      mockedGetToken.mockResolvedValue({
+        id: 2,
+      });
+
+      const { address, port } = server.address() as AddressInfo;
+      socket_client = Client(
+        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+        {
+          autoConnect: false,
+        },
+      );
+
+      const events = new Promise((resolve, reject) => {
+        socket_client.on("connect_error", (error) => {
+          reject(error);
+        });
+      });
+
+      socket_client.connect();
+
+      return expect(events).rejects.toEqual(
+        new Error("User is not an administrator of this room"),
+      );
+    });
+  });
+
+  describe("With authenticated user", () => {
+    beforeEach(() => {
+      // Mock getToken to simulate an authenticated connection
+      mockedGetToken.mockResolvedValue({
+        id: 1,
+      });
+    });
+
+    describe("Room connection", () => {
+      test.each(["", "/admin"])("Connects to valid room (%s)", (admin) => {
         const { address, port } = server.address() as AddressInfo;
         socket_client = Client(
           `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
@@ -143,217 +178,282 @@ describe("Server-side socket testing", () => {
           },
         );
 
-        // Everyone should receive any pending polls when they connect
-        const events = allEvents(socket_client, [
-          "PollStart",
-          "connect",
-          "RoomJoined",
-        ]).then(([poll]) => {
-          expect(poll).toMatchObject({
-            id: (poll as Poll).id,
+        const events = allEvents(socket_client, ["connect", "RoomJoined"]).then(
+          () => {
+            expect(socket_client.connected).toBe(true);
+          },
+        );
+
+        socket_client.connect();
+
+        return events;
+      });
+
+      test("Rejects an invalid room", () => {
+        const { address, port } = server.address() as AddressInfo;
+        socket_client = Client(`http://[${address}]:${port}/junk`, {
+          autoConnect: false,
+        });
+
+        const events = allEvents(socket_client, ["connect_error"]).then(
+          ([error]) => {
+            expect(error).toBeInstanceOf(Error);
+          },
+        );
+
+        socket_client.connect();
+
+        return events;
+      });
+    });
+
+    describe("Polling response", () => {
+      let poll: Poll;
+      beforeEach(async () => {
+        // Add a pending question to the database
+        const [{ id: roomId }] = await knex("Room")
+          .select("id")
+          .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+        [poll] = await knex("Poll").insert(
+          {
+            roomId,
+            values: { A: 0, B: 0, C: 0, D: 0, E: 0 },
+          },
+          ["*"],
+        );
+      });
+
+      test.each([[""], ["/admin"]])(
+        "Active polls are sent on connection to room (%s)",
+        (admin) => {
+          const { address, port } = server.address() as AddressInfo;
+          socket_client = Client(
+            `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
+            {
+              autoConnect: false,
+            },
+          );
+
+          // Everyone should receive any pending polls when they connect
+          const events = allEvents(socket_client, [
+            "PollStart",
+            "connect",
+            "RoomJoined",
+          ]).then(([poll]) => {
+            expect(poll).toMatchObject({
+              id: (poll as Poll).id,
+            });
+          });
+          socket_client.connect();
+          return events;
+        },
+      );
+
+      test("Poll response updates the counts", async () => {
+        const { address, port } = server.address() as AddressInfo;
+        socket_client = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        socket_admin = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        const initialized = Promise.all([
+          allEvents(socket_admin, ["PollStart", "connect", "RoomJoined"]),
+          allEvents(socket_client, ["PollStart", "connect", "RoomJoined"]),
+        ]);
+
+        socket_client.connect();
+        socket_admin.connect();
+
+        // Wait for both clients to be fully initialized
+        await initialized;
+
+        // The admin channel should received updated counts
+        const admin_events = new Promise<Question[]>((resolve) => {
+          socket_admin.off("PollResults").on("PollResults", resolve);
+        }).then((values) => {
+          expect(values).toMatchObject({
+            A: 0,
+            B: 1,
+            C: 0,
+            D: 0,
+            E: 0,
           });
         });
-        socket_client.connect();
-        return events;
-      },
-    );
 
-    test("Poll response updates the counts", async () => {
-      const { address, port } = server.address() as AddressInfo;
-      socket_client = Client(
-        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
-        {
-          autoConnect: false,
-        },
-      );
-
-      socket_admin = Client(
-        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
-        {
-          autoConnect: false,
-        },
-      );
-
-      const initialized = Promise.all([
-        allEvents(socket_admin, ["PollStart", "connect", "RoomJoined"]),
-        allEvents(socket_client, ["PollStart", "connect", "RoomJoined"]),
-      ]);
-
-      socket_client.connect();
-      socket_admin.connect();
-
-      // Wait for both clients to be fully initialized
-      await initialized;
-
-      // The admin channel should received updated counts
-      const admin_events = new Promise<Question[]>((resolve) => {
-        socket_admin.off("PollResults").on("PollResults", resolve);
-      }).then((values) => {
-        expect(values).toMatchObject({
-          A: 0,
-          B: 1,
-          C: 0,
-          D: 0,
-          E: 0,
+        // Respond to a poll as a participants
+        const participant_callbacks = new Promise((resolve) => {
+          socket_client.emit(
+            "PollResponse",
+            { id: poll.id, newChoice: "B" },
+            resolve,
+          );
+        }).then((success) => {
+          expect(success).toMatchObject({ choice: "B" });
         });
-      });
 
-      // Respond to a poll as a participants
-      const participant_callbacks = new Promise((resolve) => {
-        socket_client.emit(
-          "PollResponse",
-          { id: poll.id, newChoice: "B" },
-          resolve,
+        // Wait for the response and update
+        await Promise.all([admin_events, participant_callbacks]);
+      });
+    });
+
+    describe("Question submission", () => {
+      let question: Question;
+      beforeEach(async () => {
+        // Add a pending question to the database
+        const [{ id: roomId }] = await knex("Room")
+          .select("id")
+          .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+        [question] = await knex("Question").insert(
+          {
+            roomId,
+            question: "Test question",
+            anonymous: true,
+          },
+          ["*"],
         );
-      }).then((success) => {
-        expect(success).toMatchObject({ choice: "B" });
       });
 
-      // Wait for the response and update
-      await Promise.all([admin_events, participant_callbacks]);
-    });
-  });
+      test.each([
+        ["", 0],
+        ["/admin", 1],
+      ])(
+        "Active questions are sent on connection to room (%s)",
+        (admin, numQuestions) => {
+          const { address, port } = server.address() as AddressInfo;
+          socket_client = Client(
+            `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
+            {
+              autoConnect: false,
+            },
+          );
 
-  describe("Question submission", () => {
-    let question: Question;
-    beforeEach(async () => {
-      // Add a pending question to the database
-      const [{ id: roomId }] = await knex("Room")
-        .select("id")
-        .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
-      [question] = await knex("Question").insert(
-        {
-          roomId,
-          question: "Test question",
-          anonymous: true,
+          // Participants only see approved questions, administrators see all
+          const events = allEvents(socket_client, [
+            "QuestionNew",
+            "connect",
+            "RoomJoined",
+          ]).then(([questions]) => {
+            expect(questions).toHaveLength(numQuestions);
+            if (numQuestions > 0) {
+              const [question, ...rest] = questions as Question[];
+              expect(question).not.toHaveProperty("roomId"); // roomId is not sent to clients
+            }
+          });
+          socket_client.connect();
+          return events;
         },
-        ["*"],
       );
-    });
 
-    test.each([
-      ["", 0],
-      ["/admin", 1],
-    ])(
-      "Active questions are sent on connection to room (%s)",
-      (admin, numQuestions) => {
+      test("Removing a submitted, approved question should remove it from all views", async () => {
         const { address, port } = server.address() as AddressInfo;
         socket_client = Client(
-          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1${admin}`,
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
           {
             autoConnect: false,
           },
         );
 
-        // Participants only see approved questions, administrators see all
-        const events = allEvents(socket_client, [
-          "QuestionNew",
-          "connect",
-          "RoomJoined",
-        ]).then(([questions]) => {
-          expect(questions).toHaveLength(numQuestions);
-          if (numQuestions > 0) {
-            const [question, ...rest] = questions as Question[];
-            expect(question).not.toHaveProperty("roomId"); // roomId is not sent to clients
-          }
-        });
-        socket_client.connect();
-        return events;
-      },
-    );
-
-    test("Removing a submitted, approved question should remove it from all views", async () => {
-      const { address, port } = server.address() as AddressInfo;
-      socket_client = Client(
-        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
-        {
-          autoConnect: false,
-        },
-      );
-
-      socket_admin = Client(
-        `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
-        {
-          autoConnect: false,
-        },
-      );
-
-      const initialized = Promise.all([
-        allEvents(socket_admin, ["QuestionNew", "connect", "RoomJoined"]),
-        allEvents(socket_client, ["QuestionNew", "connect", "RoomJoined"]),
-      ]);
-
-      socket_client.connect();
-      socket_admin.connect();
-
-      // Wait for both clients to be fully initialized
-      await initialized;
-
-      // Specify expected shape of the question object using Jest matchers
-      const question_matcher = {
-        id: expect.any(Number),
-        question: "A new question",
-        anonymous: true,
-        approved: false,
-        votes: 0,
-        created_at: expect.any(String),
-      };
-
-      // The admin channel should receive the question for approval
-      const admin_question_events = new Promise<Question[]>((resolve) => {
-        socket_admin.off("QuestionNew").on("QuestionNew", resolve);
-      }).then((questions) => {
-        expect(questions).toHaveLength(1);
-        expect(questions[0]).toMatchObject(question_matcher);
-        return questions[0].id;
-      });
-
-      // Send in a new question as a participant
-      const participant_question_callbacks = new Promise((resolve) => {
-        socket_client.emit(
-          "QuestionAsk",
-          { question: "A new question", anonymous: true },
-          resolve,
+        socket_admin = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+          {
+            autoConnect: false,
+          },
         );
-      }).then((success) => {
-        expect(success).toBe(true);
-      });
 
-      // Wait for the question to be asked and sent for approval
-      const [questionId] = await Promise.all([
-        admin_question_events,
-        participant_question_callbacks,
-      ]);
+        const initialized = Promise.all([
+          allEvents(socket_admin, ["QuestionNew", "connect", "RoomJoined"]),
+          allEvents(socket_client, ["QuestionNew", "connect", "RoomJoined"]),
+        ]);
 
-      // If the admin approves the question it should be sent to the participant(s)
-      const participant_approve_events = new Promise<Question[]>((resolve) => {
-        socket_client.off("QuestionNew").on("QuestionNew", resolve);
-      }).then((questions) => {
-        expect(questions).toHaveLength(1);
-        expect(questions[0]).toMatchObject({
-          ...question_matcher,
-          approved: true,
+        socket_client.connect();
+        socket_admin.connect();
+
+        // Wait for both clients to be fully initialized
+        await initialized;
+
+        // Specify expected shape of the question object using Jest matchers
+        const question_matcher = {
+          id: expect.any(Number),
+          question: "A new question",
+          anonymous: true,
+          approved: false,
+          votes: 0,
+          created_at: expect.any(String),
+        };
+
+        // The admin channel should receive the question for approval
+        const admin_question_events = new Promise<Question[]>((resolve) => {
+          socket_admin.off("QuestionNew").on("QuestionNew", resolve);
+        }).then((questions) => {
+          expect(questions).toHaveLength(1);
+          expect(questions[0]).toMatchObject(question_matcher);
+          return questions[0].id;
         });
+
+        // Send in a new question as a participant
+        const participant_question_callbacks = new Promise((resolve) => {
+          socket_client.emit(
+            "QuestionAsk",
+            { question: "A new question", anonymous: true },
+            resolve,
+          );
+        }).then((success) => {
+          expect(success).toBe(true);
+        });
+
+        // Wait for the question to be asked and sent for approval
+        const [questionId] = await Promise.all([
+          admin_question_events,
+          participant_question_callbacks,
+        ]);
+
+        // If the admin approves the question it should be sent to the participant(s)
+        const participant_approve_events = new Promise<Question[]>(
+          (resolve) => {
+            socket_client.off("QuestionNew").on("QuestionNew", resolve);
+          },
+        ).then((questions) => {
+          expect(questions).toHaveLength(1);
+          expect(questions[0]).toMatchObject({
+            ...question_matcher,
+            approved: true,
+          });
+        });
+
+        const admin_approve_callbacks = new Promise<Question>((resolve) => {
+          socket_admin.emit("QuestionApprove", { questionId }, resolve);
+        }).then((question) => {
+          expect(question).toMatchObject({
+            ...question_matcher,
+            approved: true,
+          });
+        });
+
+        // Wait for the question to be approved and sent to the participant(s)
+        await Promise.all([
+          participant_approve_events,
+          admin_approve_callbacks,
+        ]);
+
+        // If the admin removes the question it should be removed from all views
+        const admin_remove_callbacks = new Promise<Question>((resolve) => {
+          socket_admin.emit("QuestionRemove", { questionId }, resolve);
+        }).then((removedQuestionId) => {
+          expect(typeof removedQuestionId).toBe("number");
+        });
+
+        // Wait for the question to be removed and confirmed by the admin
+        return Promise.all([admin_remove_callbacks]);
       });
-
-      const admin_approve_callbacks = new Promise<Question>((resolve) => {
-        socket_admin.emit("QuestionApprove", { questionId }, resolve);
-      }).then((question) => {
-        expect(question).toMatchObject({ ...question_matcher, approved: true });
-      });
-
-      // Wait for the question to be approved and sent to the participant(s)
-      await Promise.all([participant_approve_events, admin_approve_callbacks]);
-
-      // If the admin removes the question it should be removed from all views
-      const admin_remove_callbacks = new Promise<Question>((resolve) => {
-        socket_admin.emit("QuestionRemove", { questionId }, resolve);
-      }).then((removedQuestionId) => {
-        expect(typeof removedQuestionId).toBe("number");
-      });
-
-      // Wait for the question to be removed and confirmed by the admin
-      return Promise.all([admin_remove_callbacks]);
     });
   });
 

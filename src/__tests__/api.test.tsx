@@ -8,6 +8,9 @@ import { getServerSession } from "next-auth/next";
 import { testApiHandler } from "next-test-api-route-handler";
 import { knex } from "../knex/knex";
 import roomsEndpoint from "../pages/api/rooms/index";
+import { getServerSideProps as consoleGetServerSideProps } from "@/pages/rooms/[rid]/console";
+import type { ParsedUrlQuery } from "querystring";
+import type { GetServerSidePropsContext, PreviewData } from "next";
 
 jest.mock("next-auth/next");
 const mockedGetServerSession = jest.mocked(getServerSession);
@@ -63,6 +66,71 @@ describe("Class Interactor API", () => {
             ...newRoom,
             id: expect.any(String), // More specifically, this should be a UUID
           });
+        },
+      });
+    });
+  });
+
+  describe("/rooms/[rid]/console server side", () => {
+    test("Should return a room for an administrator", async () => {
+      const result = await consoleGetServerSideProps({
+        query: {
+          rid: "a418c099-4114-4c55-8a5b-4a142c2b26d1",
+        },
+        resolvedUrl: "/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin",
+      } as unknown as GetServerSidePropsContext<ParsedUrlQuery, PreviewData>);
+      expect(result).toMatchObject({
+        props: {
+          room: {
+            id: "a418c099-4114-4c55-8a5b-4a142c2b26d1",
+            name: "TestClass",
+          },
+          session: {
+            user: {
+              id: 1,
+            },
+          },
+        },
+      });
+    });
+
+    test("Should redirect to login if not authenticated", async () => {
+      mockedGetServerSession.mockResolvedValue(null);
+      const result = await consoleGetServerSideProps({
+        query: {
+          rid: "a418c099-4114-4c55-8a5b-4a142c2b26d1",
+        },
+        resolvedUrl: "/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin",
+      } as unknown as GetServerSidePropsContext<ParsedUrlQuery, PreviewData>);
+      expect(result).toMatchObject({
+        redirect: {
+          destination: `/api/auth/signin?${new URLSearchParams({
+            error: "SessionRequired",
+            callbackUrl: "/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin",
+          })}`,
+          permanent: false,
+        },
+      });
+    });
+
+    test("Should redirect to root with error if not an administrator", async () => {
+      mockedGetServerSession.mockResolvedValue({
+        user: {
+          id: 2,
+        },
+      });
+      const result = await consoleGetServerSideProps({
+        query: {
+          rid: "a418c099-4114-4c55-8a5b-4a142c2b26d1",
+        },
+        resolvedUrl: "/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin",
+      } as unknown as GetServerSidePropsContext<ParsedUrlQuery, PreviewData>);
+      expect(result).toMatchObject({
+        redirect: {
+          destination: `/?${new URLSearchParams({
+            error: "InvalidRoom",
+          })}`,
+          permanent: false,
         },
       });
     });
