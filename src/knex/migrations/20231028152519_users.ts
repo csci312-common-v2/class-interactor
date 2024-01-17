@@ -41,5 +41,9 @@ export async function up(knex: Knex): Promise<void> {
 }
 
 export async function down(knex: Knex): Promise<void> {
-  return knex.schema.dropTable("Roster").dropTable("User");
+  return knex.schema
+    .dropTable("Roster")
+    .dropTable("Account")
+    .dropTable("User")
+    .raw("DROP TYPE roster_role_type CASCADE");
 }
