@@ -8,6 +8,7 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Typography from "@mui/material/Typography";
+import ReminderBoard from "@/components/reminders/ReminderBoard";
 
 interface Props {
   room: {
@@ -49,7 +50,7 @@ const Console = ({ room }: Props) => {
         ({ id }: { id: number }) => {
           setPollId(id);
           setPollResponses(0);
-        }
+        },
       );
     }
   };
@@ -137,6 +138,7 @@ const Console = ({ room }: Props) => {
           </Box>
         </Grid>
       </Grid>
+      <ReminderBoard admin />
     </Container>
   );
 };
