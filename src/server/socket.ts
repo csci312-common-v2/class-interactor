@@ -2,8 +2,10 @@ import * as socketio from "socket.io";
 import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
 import { parse } from "cookie";
-import { knex } from "@/knex/knex";
-import Room from "@/models/Room";
+// Due to the way Next creates a production application, we need to import knex
+// via a relative path, not using "@"
+import { knex } from "../knex/knex";
+import Room from "../models/Room";
 
 // Develop from route description using /rooms/:rid/:admin?
 // http://forbeslindesay.github.io/express-route-tester/
