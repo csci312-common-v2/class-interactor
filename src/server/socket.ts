@@ -6,10 +6,42 @@ import { parse } from "cookie";
 // via a relative path, not using "@"
 import { knex } from "../knex/knex";
 import Room from "../models/Room";
+import GraspReaction from "../models/GraspGauge";
 
 // Develop from route description using /rooms/:rid/:admin?
 // http://forbeslindesay.github.io/express-route-tester/
 const roomRegEx = /^\/rooms\/(?:([^\/]+?))(?:\/([^\/]+?))?\/?$/i;
+
+async function getActiveGraspReactionHistogram(
+  roomId: number,
+  timeInMinutes: number = 5,
+) {
+  const currentDate = new Date();
+  const activeReactions = await GraspReaction.query()
+    .where("is_active", true)
+    .andWhere("room_id", roomId);
+
+  // console.log("activeReactions: ", activeReactions);
+
+  const levelHistogram = await GraspReaction.query()
+    .whereIn(
+      "id",
+      activeReactions.map((reaction) => reaction.id),
+    ) // only active reactions
+    .select("level")
+    .select(
+      knex.raw(
+        "SUM(GREATEST(0, 1 - EXTRACT(EPOCH FROM (? - sent_at)) / (? * 60))) as count",
+        [currentDate, timeInMinutes],
+      ),
+    )
+    .groupBy("level")
+    .orderByRaw(
+      "CASE WHEN level='good' THEN 1 WHEN level='unsure' THEN 2 WHEN level='lost' THEN 3 ELSE 4 END",
+    );
+
+  return levelHistogram;
+}
 
 export function getNamespace(io: socketio.Server) {
   return io.of(async (name, auth, next) => {
@@ -237,6 +269,24 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           }
         }
       });
+
+      // Grasp Reactions
+      // Send all active reactions when a client newly connects
+      connectionQueries.push(
+        socket.emit(
+          "GraspReactionGet",
+          await getActiveGraspReactionHistogram(roomId),
+        ),
+      );
+
+      socket.on("GraspReactionReset", async ({}) => {
+        // Set all reactions to inactive
+        await GraspReaction.query()
+          .where("room_id", roomId)
+          .patch({ is_active: false });
+        console.log(roomId, " RESET");
+        socket.emit("GraspReactionReset");
+      });
     } else {
       // Viewer interface
 
@@ -326,6 +376,26 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
             codePoint,
           });
         }
+      });
+
+      // Grasp Reaction
+      socket.on("GraspReactionSend", async (data, callback) => {
+        const [{ room_id: dropRoomId, ...newReaction }] = await knex
+          .table("GraspReaction")
+          .insert({ room_id: roomId, ...data }, ["*"]);
+        // console.log("NEW REACTION: ", newReaction);
+
+        const levelHistogram = await getActiveGraspReactionHistogram(roomId);
+        // console.log(levelHistogram);
+
+        console.log(roomId, " SEND");
+
+        // Send this event over to the admin
+        io.of(`/rooms/${roomName}/admin`).emit(
+          "GraspReactionSend",
+          levelHistogram,
+        );
+        callback(true);
       });
     }
 

@@ -11,6 +11,7 @@ import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
 import ReminderBoard from "@/components/reminders/ReminderBoard";
+import GraspGauge from "@/components/interactions/GraspGauge";
 
 interface Props {
   room: {
@@ -70,6 +71,7 @@ const Participant = ({ room }: Props) => {
         </Grid>
         <Grid xs={12} md={5} order={{ xs: 4, sm: 3 }}></Grid>
         <Grid xs={12} md={12} order={{ xs: 2, sm: 4 }}>
+          <GraspGauge />
           <Reaction />
           {/* Center reactions in "background" container " */}
           <Box

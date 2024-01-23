@@ -9,6 +9,7 @@ import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Typography from "@mui/material/Typography";
 import ReminderBoard from "@/components/reminders/ReminderBoard";
+import dynamic from "next/dynamic";
 
 interface Props {
   room: {
@@ -21,6 +22,11 @@ const Console = ({ room }: Props) => {
   const socket = useSocketContext();
   const [pollId, setPollId] = useState<number | null>(null);
   const [pollResponses, setPollResponses] = useState(0);
+
+  const DynamicGraspGaugeGraph = dynamic(
+    () => import("@/components/interactions/GraspGaugeGraph"),
+    { ssr: false },
+  );
 
   // Handle state updates on reconnecting to a room
   useEffect(() => {
@@ -85,6 +91,13 @@ const Console = ({ room }: Props) => {
     }
   };
 
+  const resetData = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (socket) {
+      socket.emit("GraspReactionReset", { roomId: room.id });
+    }
+  };
+
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" gutterBottom sx={{ mt: 1 }}>
@@ -138,6 +151,12 @@ const Console = ({ room }: Props) => {
           </Box>
         </Grid>
       </Grid>
+      <ButtonGroup variant="outlined" size="small" sx={{ my: 1 }}>
+        <Button onClick={resetData} disabled={!socket}>
+          Reset
+        </Button>
+      </ButtonGroup>
+      <DynamicGraspGaugeGraph />
       <ReminderBoard admin />
     </Container>
   );
