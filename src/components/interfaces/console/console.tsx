@@ -11,6 +11,11 @@ import Typography from "@mui/material/Typography";
 import ReminderBoard from "@/components/reminders/ReminderBoard";
 import dynamic from "next/dynamic";
 
+// Resource: https://stackoverflow.com/questions/75555873/error-require-of-es-module-in-react-gauge-chart-nextjs
+const DynamicGraspGaugeGraph = dynamic(
+  () => import("@/components/interactions/GraspGaugeGraph"),
+  { ssr: false },
+);
 interface Props {
   room: {
     id?: string;
@@ -22,11 +27,6 @@ const Console = ({ room }: Props) => {
   const socket = useSocketContext();
   const [pollId, setPollId] = useState<number | null>(null);
   const [pollResponses, setPollResponses] = useState(0);
-
-  const DynamicGraspGaugeGraph = dynamic(
-    () => import("@/components/interactions/GraspGaugeGraph"),
-    { ssr: false },
-  );
 
   // Handle state updates on reconnecting to a room
   useEffect(() => {

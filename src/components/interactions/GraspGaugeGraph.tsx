@@ -17,7 +17,6 @@ const GraspGaugeGraph = () => {
     if (socket) {
       // Update graph with grasp reactions at realtime
       const mapAndSetData = (incoming: LevelCount[]) => {
-        console.log("MAP AND SET DATA");
         const updatedIncoming = incoming.map((item) => ({
           ...item,
           count: Number(item.count),
@@ -26,7 +25,6 @@ const GraspGaugeGraph = () => {
       };
 
       const onGraspReactionReset = () => {
-        console.log("RECEIVED RESET");
         setGraspData([]);
       };
 

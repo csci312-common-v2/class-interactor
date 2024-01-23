@@ -21,8 +21,6 @@ async function getActiveGraspReactionHistogram(
     .where("is_active", true)
     .andWhere("room_id", roomId);
 
-  // console.log("activeReactions: ", activeReactions);
-
   const levelHistogram = await GraspReaction.query()
     .whereIn(
       "id",
@@ -284,7 +282,6 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         await GraspReaction.query()
           .where("room_id", roomId)
           .patch({ is_active: false });
-        console.log(roomId, " RESET");
         socket.emit("GraspReactionReset");
       });
     } else {
@@ -383,12 +380,8 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         const [{ room_id: dropRoomId, ...newReaction }] = await knex
           .table("GraspReaction")
           .insert({ room_id: roomId, ...data }, ["*"]);
-        // console.log("NEW REACTION: ", newReaction);
 
         const levelHistogram = await getActiveGraspReactionHistogram(roomId);
-        // console.log(levelHistogram);
-
-        console.log(roomId, " SEND");
 
         // Send this event over to the admin
         io.of(`/rooms/${roomName}/admin`).emit(
