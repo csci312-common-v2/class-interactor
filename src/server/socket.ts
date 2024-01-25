@@ -1,12 +1,12 @@
 import * as socketio from "socket.io";
 import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
-import { parse } from "cookie";
+import { parse, serialize } from "cookie";
 // Due to the way Next creates a production application, we need to import knex
 // via a relative path, not using "@"
 import { knex } from "../knex/knex";
 import Room from "../models/Room";
-import GraspReaction from "../models/GraspGauge";
+import GraspReaction from "../models/GraspReaction";
 
 // Develop from route description using /rooms/:rid/:admin?
 // http://forbeslindesay.github.io/express-route-tester/
@@ -17,10 +17,29 @@ async function getActiveGraspReactionHistogram(
   timeInMinutes: number = 5,
 ) {
   const currentDate = new Date();
+
+  console.log(await GraspReaction.query());
+
+  // Grab the latest reaction from a specific user (if defined)
+  const latestReactionsSubquery = GraspReaction.query()
+    .select(knex.raw("max(id) as id"))
+    .whereNotNull("anon_grasp_user_id")
+    .groupBy("anon_grasp_user_id");
+
+  // Filter by is_active, room, and user id (if defined)
   const activeReactions = await GraspReaction.query()
     .where("is_active", true)
-    .andWhere("room_id", roomId);
+    .andWhere("room_id", roomId)
+    .andWhere(function () {
+      this.whereNull("anon_grasp_user_id").orWhereIn(
+        "id",
+        latestReactionsSubquery,
+      );
+    });
 
+  console.log("LATEST: ", activeReactions);
+
+  // Calculate the histogram based on activeReactions
   const levelHistogram = await GraspReaction.query()
     .whereIn(
       "id",
@@ -102,7 +121,31 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
 
       next();
     } else {
-      next(); // Allow all non-administrative connections
+      // Allow all non-administrative connections
+      io.engine.on("initial_headers", async (headers, request) => {
+        let cookieValue;
+        const cookies = parse(request.headers.cookie || "");
+        const duration = 15 * 7 * 24 * 60 * 60; // 15 weeks
+
+        // Create the "anon-grasp" cookie, if it doesn't exist
+        if (!cookies["anon-grasp"]) {
+          // Inserting into the table led to some very weird behavior (printing multiple times and not setting any cookie)
+          // const [id] = await knex.table("AnonGraspUser").insert({}).returning("id");
+          // console.log(id);
+
+          cookieValue = uuidv4();
+        } else {
+          cookieValue = cookies["anon-grasp"];
+        }
+
+        // Always reset the duration
+        headers["set-cookie"] = serialize("anon-grasp", cookieValue, {
+          sameSite: "strict",
+          maxAge: duration,
+        });
+      });
+
+      next();
     }
   });
 
@@ -377,9 +420,48 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
 
       // Grasp Reaction
       socket.on("GraspReactionSend", async (data, callback) => {
-        const [{ room_id: dropRoomId, ...newReaction }] = await knex
-          .table("GraspReaction")
-          .insert({ room_id: roomId, ...data }, ["*"]);
+        // BUG: When the cookie is newly created, it won't read the cookie in the header,
+        // a refresh is needed since it reads the handshake headers.
+
+        // Parse the cookies from the handshake headers
+        const cookies = parse(socket.handshake.headers.cookie || "");
+        // console.log(cookies);
+        const anonGraspCookie = cookies["anon-grasp"];
+
+        if (anonGraspCookie) {
+          console.log("ANON GRASP COOKIE FOUND");
+          // Check if anonGraspCookie exists in the AnonGraspUser table
+          let user = await knex("AnonGraspUser")
+            .where({ cookie_value: anonGraspCookie })
+            .first("id");
+
+          // If cookie is not in table, add it
+          if (!user) {
+            console.log("AnonGraspCookie DOES NOT EXIST in the database");
+            [user] = await knex
+              .table("AnonGraspUser")
+              .insert({ cookie_value: anonGraspCookie })
+              .returning("*");
+          }
+
+          let { id } = user;
+
+          console.log("USER: ", user);
+          console.log("USER ID: ", id);
+
+          // Add grasp reaction to the table with an associated user
+          const [{ room_id: dropRoomId, ...newReaction }] = await knex
+            .table("GraspReaction")
+            .insert({ room_id: roomId, anon_grasp_user_id: id, ...data }, [
+              "*",
+            ]);
+        } else {
+          console.log("! NO ANON GRASP COOKIE !");
+          // Add grasp reaction to the table without an associated user
+          const [{ room_id: dropRoomId, ...newReaction }] = await knex
+            .table("GraspReaction")
+            .insert({ room_id: roomId, ...data }, ["*"]);
+        }
 
         const levelHistogram = await getActiveGraspReactionHistogram(roomId);
 
@@ -388,6 +470,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           "GraspReactionSend",
           levelHistogram,
         );
+
         callback(true);
       });
     }
