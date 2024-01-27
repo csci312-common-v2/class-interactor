@@ -12,7 +12,7 @@ interface GraspReaction {
 
 const graspReactions: GraspReaction[] = [
   { level: "Good", emoji: "😌" },
-  { level: "Unsure", emoji: "🤨" },
+  { level: "Unsure", emoji: "🤔" },
   { level: "Lost", emoji: "😳" },
 ];
 

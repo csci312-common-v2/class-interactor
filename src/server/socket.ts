@@ -12,35 +12,33 @@ import GraspReaction from "../models/GraspReaction";
 // http://forbeslindesay.github.io/express-route-tester/
 const roomRegEx = /^\/rooms\/(?:([^\/]+?))(?:\/([^\/]+?))?\/?$/i;
 
-async function getActiveGraspReactionHistogram(
+interface GraspReactionWithCount extends GraspReaction {
+  count: number;
+}
+
+async function getActiveGraspReactionCount(
   roomId: number,
   timeInMinutes: number = 5,
 ) {
   const currentDate = new Date();
 
-  console.log(await GraspReaction.query());
-
-  // Grab the latest reaction from a specific user (if defined)
-  const latestReactionsSubquery = GraspReaction.query()
+  // Grab the latest reaction from a specific user
+  const latestReactions = await GraspReaction.query()
     .select(knex.raw("max(id) as id"))
     .whereNotNull("anon_grasp_user_id")
     .groupBy("anon_grasp_user_id");
 
-  // Filter by is_active, room, and user id (if defined)
+  // Filter by is_active, room, and user id
   const activeReactions = await GraspReaction.query()
     .where("is_active", true)
     .andWhere("room_id", roomId)
-    .andWhere(function () {
-      this.whereNull("anon_grasp_user_id").orWhereIn(
-        "id",
-        latestReactionsSubquery,
-      );
-    });
+    .whereIn(
+      "id",
+      latestReactions.map((reaction) => reaction.id),
+    ); // only latest reactions from unique users
 
-  console.log("LATEST: ", activeReactions);
-
-  // Calculate the histogram based on activeReactions
-  const levelHistogram = await GraspReaction.query()
+  // Calculate the count based on activeReactions (linear decay)
+  const levelCount: GraspReactionWithCount[] = (await GraspReaction.query()
     .whereIn(
       "id",
       activeReactions.map((reaction) => reaction.id),
@@ -55,9 +53,21 @@ async function getActiveGraspReactionHistogram(
     .groupBy("level")
     .orderByRaw(
       "CASE WHEN level='good' THEN 1 WHEN level='unsure' THEN 2 WHEN level='lost' THEN 3 ELSE 4 END",
-    );
+    )) as GraspReactionWithCount[];
 
-  return levelHistogram;
+  // Define the default levels
+  const defaultLevels = ["good", "unsure", "lost"];
+
+  // Create a new array to maintain the order
+  // Returns all levels in order with count 0 if not present in calculated levelCount
+  // Ensure GraspGaugeGraph order and colors
+  let orderedLevelCount = defaultLevels.map((level) => ({
+    level,
+    count: (levelCount.find((item) => item.level === level) || { count: 0 })
+      .count,
+  }));
+
+  return orderedLevelCount;
 }
 
 export function getNamespace(io: socketio.Server) {
@@ -122,29 +132,6 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
       next();
     } else {
       // Allow all non-administrative connections
-      io.engine.on("initial_headers", async (headers, request) => {
-        let cookieValue;
-        const cookies = parse(request.headers.cookie || "");
-        const duration = 15 * 7 * 24 * 60 * 60; // 15 weeks
-
-        // Create the "anon-grasp" cookie, if it doesn't exist
-        if (!cookies["anon-grasp"]) {
-          // Inserting into the table led to some very weird behavior (printing multiple times and not setting any cookie)
-          // const [id] = await knex.table("AnonGraspUser").insert({}).returning("id");
-          // console.log(id);
-
-          cookieValue = uuidv4();
-        } else {
-          cookieValue = cookies["anon-grasp"];
-        }
-
-        // Always reset the duration
-        headers["set-cookie"] = serialize("anon-grasp", cookieValue, {
-          sameSite: "strict",
-          maxAge: duration,
-        });
-      });
-
       next();
     }
   });
@@ -316,16 +303,34 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
       connectionQueries.push(
         socket.emit(
           "GraspReactionGet",
-          await getActiveGraspReactionHistogram(roomId),
+          await getActiveGraspReactionCount(roomId),
         ),
       );
 
-      socket.on("GraspReactionReset", async ({}) => {
+      socket.on("GraspReactionReset", async (data, callback) => {
         // Set all reactions to inactive
         await GraspReaction.query()
           .where("room_id", roomId)
           .patch({ is_active: false });
         socket.emit("GraspReactionReset");
+
+        // Primarily for testing
+        if (typeof callback === "function") {
+          callback(true);
+        }
+      });
+
+      socket.on("GraspReactionGet", async (data, callback) => {
+        // Send updated count calculations to admin
+        socket.emit(
+          "GraspReactionGet",
+          await getActiveGraspReactionCount(roomId),
+        );
+
+        // Primarily for testing
+        if (typeof callback === "function") {
+          callback(true);
+        }
       });
     } else {
       // Viewer interface
@@ -420,55 +425,20 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
 
       // Grasp Reaction
       socket.on("GraspReactionSend", async (data, callback) => {
-        // BUG: When the cookie is newly created, it won't read the cookie in the header,
-        // a refresh is needed since it reads the handshake headers.
+        const anonGraspUserId = socket.request.anonGraspUserCookie;
 
-        // Parse the cookies from the handshake headers
-        const cookies = parse(socket.handshake.headers.cookie || "");
-        // console.log(cookies);
-        const anonGraspCookie = cookies["anon-grasp"];
-
-        if (anonGraspCookie) {
-          console.log("ANON GRASP COOKIE FOUND");
-          // Check if anonGraspCookie exists in the AnonGraspUser table
-          let user = await knex("AnonGraspUser")
-            .where({ cookie_value: anonGraspCookie })
-            .first("id");
-
-          // If cookie is not in table, add it
-          if (!user) {
-            console.log("AnonGraspCookie DOES NOT EXIST in the database");
-            [user] = await knex
-              .table("AnonGraspUser")
-              .insert({ cookie_value: anonGraspCookie })
-              .returning("*");
-          }
-
-          let { id } = user;
-
-          console.log("USER: ", user);
-          console.log("USER ID: ", id);
-
-          // Add grasp reaction to the table with an associated user
-          const [{ room_id: dropRoomId, ...newReaction }] = await knex
-            .table("GraspReaction")
-            .insert({ room_id: roomId, anon_grasp_user_id: id, ...data }, [
-              "*",
-            ]);
-        } else {
-          console.log("! NO ANON GRASP COOKIE !");
-          // Add grasp reaction to the table without an associated user
-          const [{ room_id: dropRoomId, ...newReaction }] = await knex
-            .table("GraspReaction")
-            .insert({ room_id: roomId, ...data }, ["*"]);
-        }
-
-        const levelHistogram = await getActiveGraspReactionHistogram(roomId);
+        // Add grasp reaction to table with associated user
+        const [{ room_id: dropRoomId, ...newReaction }] = await knex
+          .table("GraspReaction")
+          .insert(
+            { room_id: roomId, anon_grasp_user_id: anonGraspUserId, ...data },
+            ["*"],
+          );
 
         // Send this event over to the admin
         io.of(`/rooms/${roomName}/admin`).emit(
           "GraspReactionSend",
-          levelHistogram,
+          await getActiveGraspReactionCount(roomId),
         );
 
         callback(true);

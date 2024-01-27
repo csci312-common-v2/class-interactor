@@ -4,7 +4,6 @@ export async function up(knex: Knex): Promise<void> {
   // Create the AnonGraspUser table
   await knex.schema.createTable("AnonGraspUser", (table) => {
     table.increments("id").primary();
-    table.uuid("cookie_value").unique().notNullable();
   });
 
   // Add the foreign key to the GraspReaction table

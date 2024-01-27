@@ -11,14 +11,14 @@ export default class GraspReaction extends BaseModel {
   room!: Room;
   is_active?: boolean;
   anon_grasp_user_id!: number;
-  anonGraspUser?: AnonGraspUser;
+  anonGraspUser!: AnonGraspUser;
 
   static tableName = "GraspReaction";
 
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["sent_at", "level", "room_id"],
+      required: ["sent_at", "level", "room_id", "anon_grasp_user_id"],
 
       properties: {
         id: { type: "integer" },

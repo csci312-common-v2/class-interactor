@@ -3,7 +3,6 @@ import BaseModel from "./BaseModel";
 
 export default class AnonGraspUser extends BaseModel {
   id!: number;
-  cookie_value!: string;
 
   static tableName = "AnonGraspUser";
 
@@ -13,7 +12,6 @@ export default class AnonGraspUser extends BaseModel {
 
       properties: {
         id: { type: "integer" },
-        cookie_value: { type: "string", format: "uuid" },
       },
     };
   }
