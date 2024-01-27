@@ -41,11 +41,7 @@ nextApp.prepare().then(() => {
           .returning("id");
         anonGraspId = anonGraspObject.id;
       } else {
-        // Cookie is present, ensure it is already stored in the database
-        const [anonGraspObject] = await knex
-          .table("AnonGraspUser")
-          .where("id", cookies["anon-grasp-user"]);
-        anonGraspId = anonGraspObject.id;
+        anonGraspId = cookies["anon-grasp-user"];
       }
 
       // Attach anonymous id to request object
