@@ -12,6 +12,7 @@ import { default as Client, Socket as ClientSocket } from "socket.io-client";
 import { getToken } from "next-auth/jwt";
 import { knex } from "@/knex/knex";
 import { getNamespace, bindListeners } from "./socket";
+import GraspReaction from "@/models/GraspReaction";
 
 // Mock the NextAuth package
 jest.mock("next-auth/jwt");
@@ -111,7 +112,7 @@ describe("Server-side socket testing", () => {
       return events;
     });
 
-    test("Unauthetnicated user can't connect to admin channel", () => {
+    test("Unauthenticated user can't connect to admin channel", () => {
       const { address, port } = server.address() as AddressInfo;
       socket_client = Client(
         `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
@@ -777,6 +778,252 @@ describe("Server-side socket testing", () => {
 
         // Wait for the reminder to be removed and confirmed by the admin
         return Promise.all([admin_remove_callbacks, admin_remove_events]);
+      });
+    });
+
+    describe("Grasp reactions", () => {
+      type Count = {
+        level: "good" | "unsure" | "lost";
+        count: number;
+      };
+
+      beforeEach(async () => {
+        // Mocked timestamp
+        jest.spyOn(Date, "now").mockImplementation(() => 1673942400000);
+
+        const [{ id: roomId }] = await knex("Room")
+          .select("id")
+          .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+
+        const [{ id: userId }] = await knex
+          .table("AnonGraspUser")
+          .insert({})
+          .returning("*");
+
+        // Must be in order of most recent to least recent
+        // Assumption is reactions will be added in chronological order
+        const graspReactions = [
+          {
+            level: "lost",
+            sent_at: new Date(Date.now() - 5 * 60 * 1000),
+          },
+          {
+            level: "good",
+            sent_at: new Date(Date.now() - 3 * 60 * 1000),
+          },
+          {
+            level: "unsure",
+            sent_at: new Date(Date.now()),
+          },
+        ];
+
+        for (const graspReaction of graspReactions) {
+          await knex("GraspReaction").insert(
+            {
+              level: graspReaction.level,
+              sent_at: graspReaction.sent_at,
+              room_id: roomId,
+              is_active: true,
+              anon_grasp_user_id: userId,
+            },
+            ["*"],
+          );
+        }
+      });
+
+      afterEach(() => {
+        jest.spyOn(Date, "now").mockRestore();
+      });
+
+      test("Data based on active grasp reactions are sent on connection to admin", async () => {
+        const { address, port } = server.address() as AddressInfo;
+        socket_admin = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        const events = allEvents(socket_admin, [
+          "GraspReactionGet",
+          "connect",
+          "RoomJoined",
+        ]).then((value: unknown[]) => {
+          const graspReactionGetResults = value[0];
+          const counts = graspReactionGetResults as Count[];
+
+          counts.forEach((entry) => {
+            expect(typeof entry.level).toBe("string");
+            expect(typeof entry.count).toBe("string");
+          });
+
+          // Check that the count of 'good' and 'lost' is 0 and 'unsure' is not 0
+          // Based on the beforeEach data
+          const goodCount = counts.find(
+            (entry) => entry.level === "good",
+          )!.count;
+          const unsureCount = counts.find(
+            (entry) => entry.level === "unsure",
+          )!.count;
+          const lostCount = counts.find(
+            (entry) => entry.level === "lost",
+          )!.count;
+
+          expect(goodCount).toBe("0");
+          expect(unsureCount).not.toBe("0");
+          expect(lostCount).toBe("0");
+        });
+
+        socket_admin.connect();
+        return events;
+      });
+
+      test("Resetting grasp reactions sets all is_active to false", async () => {
+        const [{ id: roomId }] = await knex("Room")
+          .select("id")
+          .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+
+        // Connect to the server
+        const { address, port } = server.address() as AddressInfo;
+
+        socket_admin = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        // Initialize the clients
+        const initialized = Promise.all([
+          allEvents(socket_admin, [
+            "GraspReactionGet",
+            "connect",
+            "RoomJoined",
+          ]),
+        ]);
+
+        socket_admin.connect();
+
+        // Wait for both clients to be fully initialized
+        await initialized;
+
+        // Emit the GraspReactionReset event from the admin client
+        const admin_reset_callback = new Promise<void>((resolve) => {
+          socket_admin.emit("GraspReactionReset", {}, resolve);
+        });
+
+        // Listen for the GraspReactionReset event on the admin
+        const client_reset_event = new Promise<void>((resolve) => {
+          socket_admin
+            .off("GraspReactionReset")
+            .on("GraspReactionReset", async () => {
+              // Query the database for the values you want to verify
+              const reactions = await GraspReaction.query().where(
+                "room_id",
+                roomId,
+              );
+
+              // Check the returned values against the expected values
+              reactions.forEach((reaction) => {
+                expect(reaction.is_active).toBe(false);
+              });
+
+              resolve();
+            });
+        });
+
+        // Verify that the event is received and the reactions are reset
+        await Promise.all([admin_reset_callback, client_reset_event]);
+      });
+
+      test("Admin receives GraspReactionSend from client", async () => {
+        const [{ id: roomId }] = await knex("Room")
+          .select("id")
+          .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
+
+        // Connect to the server
+        const { address, port } = server.address() as AddressInfo;
+
+        socket_admin = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1/admin`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        socket_client = Client(
+          `http://[${address}]:${port}/rooms/a418c099-4114-4c55-8a5b-4a142c2b26d1`,
+          {
+            autoConnect: false,
+          },
+        );
+
+        // Initialize the clients
+        const initialized = Promise.all([
+          allEvents(socket_admin, [
+            "GraspReactionGet",
+            "connect",
+            "RoomJoined",
+          ]),
+          allEvents(socket_client, ["connect", "RoomJoined"]),
+        ]);
+
+        socket_admin.connect();
+        socket_client.connect();
+
+        // Wait for both clients to be fully initialized
+        await initialized;
+
+        const [{ id: userId }] = await knex
+          .table("AnonGraspUser")
+          .insert({})
+          .returning("*");
+
+        // Emit the GraspReactionSend event from the participant client
+        const participant_send_callback = new Promise<void>((resolve) => {
+          socket_client.emit(
+            "GraspReactionSend",
+            {
+              level: "good",
+              sent_at: new Date(Date.now()),
+              anon_grasp_user_id: userId,
+            },
+            resolve,
+          );
+        }).then((success) => {
+          expect(success).toBe(true);
+        });
+
+        // Listen for the GraspReactionSend event on the admin
+        const client_send_event = new Promise<Count[]>((resolve) => {
+          socket_admin
+            .off("GraspReactionSend")
+            .on("GraspReactionSend", resolve);
+        }).then((counts) => {
+          counts.forEach((entry) => {
+            expect(typeof entry.level).toBe("string");
+            expect(typeof entry.count).toBe("string");
+          });
+
+          // Check that the count of 'lost' is 0 and 'good' and 'unsure' is not 0
+          // Based on the beforeEach data and newly sent grasp reaction
+          const goodCount = counts.find(
+            (entry) => entry.level === "good",
+          )!.count;
+          const unsureCount = counts.find(
+            (entry) => entry.level === "unsure",
+          )!.count;
+          const lostCount = counts.find(
+            (entry) => entry.level === "lost",
+          )!.count;
+
+          expect(goodCount).not.toBe("0");
+          expect(unsureCount).not.toBe("0");
+          expect(lostCount).toBe("0");
+        });
+
+        // Verify that the event is received and the reactions are reset
+        await Promise.all([participant_send_callback, client_send_event]);
       });
     });
   });

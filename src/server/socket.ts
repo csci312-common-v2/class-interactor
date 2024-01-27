@@ -20,11 +20,11 @@ async function getActiveGraspReactionCount(
   roomId: number,
   timeInMinutes: number = 5,
 ) {
-  const currentDate = new Date();
+  const currentDate = new Date(Date.now()); // Use Date.now() for testing
 
   // Grab the latest reaction from a specific user
   const latestReactions = await GraspReaction.query()
-    .select(knex.raw("max(id) as id"))
+    .select(knex.raw("max(id) as id")) // Assumption: Reactions from oldest to newest
     .whereNotNull("anon_grasp_user_id")
     .groupBy("anon_grasp_user_id");
 
@@ -63,7 +63,7 @@ async function getActiveGraspReactionCount(
   // Ensure GraspGaugeGraph order and colors
   let orderedLevelCount = defaultLevels.map((level) => ({
     level,
-    count: (levelCount.find((item) => item.level === level) || { count: 0 })
+    count: (levelCount.find((item) => item.level === level) || { count: "0" })
       .count,
   }));
 
