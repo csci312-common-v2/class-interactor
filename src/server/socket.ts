@@ -22,52 +22,40 @@ async function getActiveGraspReactionCount(
 ) {
   const currentDate = new Date(Date.now()); // Use Date.now() for testing
 
-  // Grab the latest reaction from a specific user
-  const latestReactions = await GraspReaction.query()
-    .select(knex.raw("max(id) as id")) // Assumption: Reactions from oldest to newest
-    .whereNotNull("anon_grasp_user_id")
-    .groupBy("anon_grasp_user_id");
-
-  // Filter by is_active, room, and user id
-  const activeReactions = await GraspReaction.query()
+  // Grab the latest active reaction from a specific user in a room
+  const latestActiveReactions = await knex("GraspReaction")
+    .distinctOn("anon_user_id")
+    .select("*")
     .where("is_active", true)
     .andWhere("room_id", roomId)
-    .whereIn(
-      "id",
-      latestReactions.map((reaction) => reaction.id),
-    ); // only latest reactions from unique users
+    .orderBy("anon_user_id", "asc")
+    .orderBy("sent_at", "desc");
 
-  // Calculate the count based on activeReactions (linear decay)
-  const levelCount: GraspReactionWithCount[] = (await GraspReaction.query()
-    .whereIn(
-      "id",
-      activeReactions.map((reaction) => reaction.id),
-    ) // only active reactions
-    .select("level")
-    .select(
-      knex.raw(
-        "SUM(GREATEST(0, 1 - EXTRACT(EPOCH FROM (? - sent_at)) / (? * 60))) as count",
-        [currentDate, timeInMinutes],
-      ),
-    )
-    .groupBy("level")
-    .orderByRaw(
-      "CASE WHEN level='good' THEN 1 WHEN level='unsure' THEN 2 WHEN level='lost' THEN 3 ELSE 4 END",
-    )) as GraspReactionWithCount[];
+  // Create an array to store the counts for each level in the order that they will be graphed
+  // Note that all levels are returned to ensure GraspGaugeGraph order and colors
+  const levelCounts: { level: string; count: number }[] = [
+    { level: "good", count: 0 },
+    { level: "unsure", count: 0 },
+    { level: "lost", count: 0 },
+  ];
 
-  // Define the default levels
-  const defaultLevels = ["good", "unsure", "lost"];
+  // Calculate the linear decay for each reaction in latestActiveReactions
+  latestActiveReactions.forEach((reaction) => {
+    const timeDifferenceInSeconds =
+      (currentDate.getTime() - new Date(reaction.sent_at).getTime()) / 1000;
+    const decay = Math.max(
+      0,
+      1 - timeDifferenceInSeconds / (timeInMinutes * 60),
+    );
 
-  // Create a new array to maintain the order
-  // Returns all levels in order with count 0 if not present in calculated levelCount
-  // Ensure GraspGaugeGraph order and colors
-  let orderedLevelCount = defaultLevels.map((level) => ({
-    level,
-    count: (levelCount.find((item) => item.level === level) || { count: "0" })
-      .count,
-  }));
+    // Find the corresponding level in levelCounts and add the decay
+    const levelCount = levelCounts.find((lc) => lc.level === reaction.level);
+    if (levelCount) {
+      levelCount.count += decay;
+    }
+  });
 
-  return orderedLevelCount;
+  return levelCounts;
 }
 
 export function getNamespace(io: socketio.Server) {
@@ -425,23 +413,24 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
 
       // Grasp Reaction
       socket.on("GraspReactionSend", async (data, callback) => {
-        const anonGraspUserId = socket.request.anonGraspUserCookie;
+        const anonUserId = socket.request.anonUserCookie;
 
         // Add grasp reaction to table with associated user
         const [{ room_id: dropRoomId, ...newReaction }] = await knex
           .table("GraspReaction")
-          .insert(
-            { room_id: roomId, anon_grasp_user_id: anonGraspUserId, ...data },
-            ["*"],
-          );
+          .insert({ room_id: roomId, anon_user_id: anonUserId, ...data }, [
+            "*",
+          ]);
 
         // Send this event over to the admin
         io.of(`/rooms/${roomName}/admin`).emit(
-          "GraspReactionSend",
+          "GraspReactionGet",
           await getActiveGraspReactionCount(roomId),
         );
 
-        callback(true);
+        if (typeof callback === "function") {
+          callback(true);
+        }
       });
     }
 

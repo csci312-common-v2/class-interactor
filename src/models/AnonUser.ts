@@ -1,10 +1,10 @@
 import { Model } from "objection";
 import BaseModel from "./BaseModel";
 
-export default class AnonGraspUser extends BaseModel {
+export default class AnonUser extends BaseModel {
   id!: number;
 
-  static tableName = "AnonGraspUser";
+  static tableName = "AnonUser";
 
   static get jsonSchema() {
     return {

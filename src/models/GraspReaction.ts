@@ -1,7 +1,7 @@
 import { Model } from "objection";
 import BaseModel from "./BaseModel";
 import Room from "./Room";
-import AnonGraspUser from "./AnonGraspUser";
+import AnonUser from "./AnonUser";
 
 export default class GraspReaction extends BaseModel {
   id!: number;
@@ -10,15 +10,15 @@ export default class GraspReaction extends BaseModel {
   room_id!: number;
   room!: Room;
   is_active?: boolean;
-  anon_grasp_user_id!: number;
-  anonGraspUser!: AnonGraspUser;
+  anon_user_id!: number;
+  anonUser!: AnonUser;
 
   static tableName = "GraspReaction";
 
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["sent_at", "level", "room_id", "anon_grasp_user_id"],
+      required: ["sent_at", "level", "room_id", "anon_user_id"],
 
       properties: {
         id: { type: "integer" },
@@ -26,7 +26,7 @@ export default class GraspReaction extends BaseModel {
         level: { type: "string", enum: ["good", "unsure", "lost"] },
         room_id: { type: "integer" },
         is_active: { type: "boolean" },
-        anon_grasp_user_id: { type: "integer" },
+        anon_user_id: { type: "integer" },
       },
     };
   }
@@ -41,12 +41,12 @@ export default class GraspReaction extends BaseModel {
           to: "Room.id",
         },
       },
-      anonGraspUser: {
+      anonUser: {
         relation: Model.BelongsToOneRelation,
-        modelClass: AnonGraspUser,
+        modelClass: AnonUser,
         join: {
-          from: "GraspReaction.anon_grasp_user_id",
-          to: "AnonGraspUser.id",
+          from: "GraspReaction.anon_user_id",
+          to: "AnonUser.id",
         },
       },
     };

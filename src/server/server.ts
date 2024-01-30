@@ -30,33 +30,34 @@ nextApp.prepare().then(() => {
   const io: socketio.Server = new socketio.Server(server, {
     allowRequest: async (req, callback) => {
       const cookies = parse(req.headers.cookie || "");
-      let anonGraspId;
+      let anonUserId;
 
-      if (!cookies["anon-grasp-user"]) {
+      if (!cookies["anon-user"]) {
         // Cookie is not present, create the cookie value
-        // (i.e. new AnonGraspUser and store it in database)
-        const [anonGraspObject] = await knex
-          .table("AnonGraspUser")
+        // (i.e. new AnonUser and store it in database)
+        const [anonUserObject] = await knex
+          .table("AnonUser")
           .insert({})
           .returning("id");
-        anonGraspId = anonGraspObject.id;
+        anonUserId = anonUserObject.id;
       } else {
-        anonGraspId = cookies["anon-grasp-user"];
+        anonUserId = cookies["anon-user"];
       }
 
       // Attach anonymous id to request object
-      req.anonGraspUserCookie = anonGraspId;
+      req.anonUserCookie = anonUserId;
       callback(null, true);
     },
   });
 
   io.engine.on("initial_headers", (headers, request) => {
-    // Set the anon-grasp-user cookie
-    const cookieValue = request.anonGraspUserCookie;
+    // Set the anon-user cookie
+    const cookieValue = request.anonUserCookie;
     const duration = 15 * 7 * 24 * 60 * 60; // 15 weeks
 
     // Always reset the duration
-    headers["set-cookie"] = serialize("anon-grasp-user", cookieValue, {
+    headers["set-cookie"] = serialize("anon-user", cookieValue, {
+      httpOnly: true,
       sameSite: "strict",
       maxAge: duration,
     });

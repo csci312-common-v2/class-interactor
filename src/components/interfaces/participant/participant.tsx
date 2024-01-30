@@ -62,16 +62,17 @@ const Participant = ({ room }: Props) => {
           </Stack>
           <Poll key={pollId} id={pollId} />
         </Grid>
-        <Grid xs={12} md={5} order={{ xs: 3, sm: 2 }}>
+        <Grid xs={12} md={5} order={{ xs: 4, sm: 2 }}>
           <Typography variant="h6">Q & A</Typography>
           <QuestionBoard />
           <Typography variant="caption" color="text.secondary" component="div">
             Questions will appear once approved by your instructor.
           </Typography>
         </Grid>
-        <Grid xs={12} md={5} order={{ xs: 4, sm: 3 }}></Grid>
-        <Grid xs={12} md={12} order={{ xs: 2, sm: 4 }}>
+        <Grid xs={12} md={5} order={{ xs: 2, sm: 3 }}>
           <GraspGauge />
+        </Grid>
+        <Grid xs={12} md={12} order={{ xs: 3, sm: 4 }}>
           <Reaction />
           {/* Center reactions in "background" container " */}
           <Box

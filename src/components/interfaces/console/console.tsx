@@ -150,13 +150,15 @@ const Console = ({ room }: Props) => {
             <QuestionBoard admin />
           </Box>
         </Grid>
+        <Grid xs={12} md={4}>
+          <ButtonGroup variant="outlined" size="small" sx={{ my: 1 }}>
+            <Button onClick={resetData} disabled={!socket}>
+              Reset
+            </Button>
+          </ButtonGroup>
+          <DynamicGraspGaugeGraph />
+        </Grid>
       </Grid>
-      <ButtonGroup variant="outlined" size="small" sx={{ my: 1 }}>
-        <Button onClick={resetData} disabled={!socket}>
-          Reset
-        </Button>
-      </ButtonGroup>
-      <DynamicGraspGaugeGraph />
       <ReminderBoard admin />
     </Container>
   );

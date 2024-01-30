@@ -18,10 +18,10 @@ const GraspGaugeGraph = () => {
   useEffect(() => {
     if (socket) {
       // Update graph with grasp reactions at realtime
-      const mapAndSetData = (incoming: LevelCount[]) => {
+      const onGraspReactionGet = (incoming: LevelCount[]) => {
         const updatedIncoming = incoming.map((item) => ({
           ...item,
-          count: Number(item.count),
+          count: item.count,
         }));
         setGraspData(updatedIncoming);
       };
@@ -36,14 +36,12 @@ const GraspGaugeGraph = () => {
       }, 60 * 1000);
 
       // Listen for events
-      socket.on("GraspReactionGet", mapAndSetData);
-      socket.on("GraspReactionSend", mapAndSetData);
+      socket.on("GraspReactionGet", onGraspReactionGet);
       socket.on("GraspReactionReset", onGraspReactionReset);
 
       // Make sure to remove listener and clear interval when component is unmounted
       return () => {
-        socket.off("GraspReactionGet", mapAndSetData);
-        socket.off("GraspReactionSend", mapAndSetData);
+        socket.off("GraspReactionGet", onGraspReactionGet);
         socket.off("GraspReactionReset", onGraspReactionReset);
         clearInterval(intervalId);
       };
@@ -51,7 +49,7 @@ const GraspGaugeGraph = () => {
   }, [socket]);
 
   // Convert data for chart to properly format
-  let chartData = graspData.reduce(
+  const chartData = graspData.reduce(
     (acc: { [key: string]: number | string }, item) => {
       acc[item.level] = item.count;
       return acc;

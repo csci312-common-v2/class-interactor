@@ -7,23 +7,19 @@ export default function useThrottle<T>(value: T, interval = 500) {
   const lastUpdated = useRef<number | null>(null);
 
   useEffect(() => {
-    const now = Date.now();
-
-    if (lastUpdated.current && now >= lastUpdated.current + interval) {
-      lastUpdated.current = now;
-      setThrottledValue(value);
-      setIsActive(false);
-    } else {
+    // Always set isActive for an interval amount of time when value changes
+    // Ensure value is not null; prevents extra unnecessary disabling
+    if (value) {
+      const now = Date.now();
       setIsActive(true);
       const id = window.setTimeout(() => {
         lastUpdated.current = now;
         setThrottledValue(value);
         setIsActive(false);
       }, interval);
-
       return () => window.clearTimeout(id);
     }
   }, [value, interval]);
 
-  return [throttledValue, isActive];
+  return [throttledValue, isActive] as const;
 }

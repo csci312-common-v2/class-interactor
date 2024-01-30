@@ -1,5 +1,5 @@
 declare module "http" {
   interface IncomingMessage {
-    anonGraspUserCookie?: string;
+    anonUserCookie?: string;
   }
 }

@@ -51,9 +51,6 @@ describe("GraspGauge", () => {
     // Simulate a button click
     fireEvent.click(screen.getAllByRole("button")[0]);
 
-    // Re-render the component to apply the new return value of useThrottle
-    render(<GraspGauge />);
-
     // Check if the buttons are disabled
     screen.getAllByRole("button").forEach((button) => {
       expect(button).toBeDisabled();

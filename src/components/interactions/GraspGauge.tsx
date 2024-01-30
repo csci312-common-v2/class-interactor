@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import ToggleButton from "@mui/material/ToggleButton";
@@ -21,43 +21,32 @@ const GraspGauge = () => {
   const [currentGrasp, setCurrentGrasp] = useState<GraspReaction | null>(null);
   const [throttledValue, isDisabled] = useThrottle(currentGrasp, 3000);
 
+  useEffect(() => {
+    if (!isDisabled) {
+      setCurrentGrasp(null);
+    }
+  }, [isDisabled]);
+
   const handleGraspChange = (
     _event: React.MouseEvent<HTMLElement>,
     updatedGrasp: GraspReaction | null,
   ) => {
     setCurrentGrasp(updatedGrasp);
     if (socket && updatedGrasp) {
-      socket.emit(
-        "GraspReactionSend",
-        {
-          level: updatedGrasp.level.toLowerCase(),
-          sent_at: new Date(),
-        },
-        (success: boolean) => {
-          if (success) {
-            // Immediately reset selection to setup for new selection
-            setCurrentGrasp(null);
-          }
-        },
-      );
-    }
-  };
-
-  const handleGraspClick = (
-    event: React.MouseEvent<HTMLElement>,
-    codePoint?: number,
-  ) => {
-    if (socket && codePoint) {
-      socket.emit("ReactionSend", codePoint);
+      socket.emit("ReactionSend", updatedGrasp.emoji.codePointAt(0));
+      socket.emit("GraspReactionSend", {
+        level: updatedGrasp.level.toLowerCase(),
+        sent_at: new Date(),
+      });
     }
   };
 
   return (
-    <Box my={2}>
+    <Box my={1}>
       <Typography variant="h6">Grasp Gauge</Typography>
       <ToggleButtonGroup
         exclusive
-        disabled={isDisabled === true || false}
+        disabled={isDisabled}
         value={currentGrasp}
         onChange={handleGraspChange}
       >
@@ -66,7 +55,6 @@ const GraspGauge = () => {
             sx={{ p: 1, minWidth: 0 }}
             key={gr.emoji.codePointAt(0)}
             value={gr}
-            onClick={(e) => handleGraspClick(e, gr.emoji.codePointAt(0))}
           >
             {gr.emoji} {gr.level}
           </ToggleButton>

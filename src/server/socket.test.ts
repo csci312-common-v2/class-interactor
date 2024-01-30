@@ -499,20 +499,7 @@ describe("Server-side socket testing", () => {
           },
         ];
 
-        await Promise.all(
-          reminders.map((reminder) =>
-            knex("Reminder").insert(
-              {
-                roomId,
-                title: reminder.title,
-                description: reminder.description,
-                start_time: reminder.start_time,
-                end_time: reminder.end_time,
-              },
-              ["*"],
-            ),
-          ),
-        );
+        await knex("Reminder").insert(reminders);
       });
 
       test.each([
@@ -787,6 +774,10 @@ describe("Server-side socket testing", () => {
         count: number;
       };
 
+      function findCountByLevel(counts: Count[], level: string) {
+        return counts.find((entry) => entry.level === level)!.count;
+      }
+
       beforeEach(async () => {
         // Mocked timestamp
         jest.spyOn(Date, "now").mockImplementation(() => 1673942400000);
@@ -796,39 +787,35 @@ describe("Server-side socket testing", () => {
           .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
 
         const [{ id: userId }] = await knex
-          .table("AnonGraspUser")
+          .table("AnonUser")
           .insert({})
           .returning("*");
 
-        // Must be in order of most recent to least recent
-        // Assumption is reactions will be added in chronological order
+        // Purposefully out of chronological order since database should order by sent_at timestamp
         const graspReactions = [
           {
             level: "lost",
             sent_at: new Date(Date.now() - 5 * 60 * 1000),
           },
           {
-            level: "good",
-            sent_at: new Date(Date.now() - 3 * 60 * 1000),
-          },
-          {
             level: "unsure",
             sent_at: new Date(Date.now()),
           },
+          {
+            level: "good",
+            sent_at: new Date(Date.now() - 3 * 60 * 1000),
+          },
         ];
 
-        for (const graspReaction of graspReactions) {
-          await knex("GraspReaction").insert(
-            {
-              level: graspReaction.level,
-              sent_at: graspReaction.sent_at,
-              room_id: roomId,
-              is_active: true,
-              anon_grasp_user_id: userId,
-            },
-            ["*"],
-          );
-        }
+        const graspReactionEntries = graspReactions.map((graspReaction) => ({
+          level: graspReaction.level,
+          sent_at: graspReaction.sent_at,
+          room_id: roomId,
+          is_active: true,
+          anon_user_id: userId,
+        }));
+
+        await knex("GraspReaction").insert(graspReactionEntries, ["*"]);
       });
 
       afterEach(() => {
@@ -854,24 +841,14 @@ describe("Server-side socket testing", () => {
 
           counts.forEach((entry) => {
             expect(typeof entry.level).toBe("string");
-            expect(typeof entry.count).toBe("string");
+            expect(typeof entry.count).toBe("number");
           });
 
           // Check that the count of 'good' and 'lost' is 0 and 'unsure' is not 0
           // Based on the beforeEach data
-          const goodCount = counts.find(
-            (entry) => entry.level === "good",
-          )!.count;
-          const unsureCount = counts.find(
-            (entry) => entry.level === "unsure",
-          )!.count;
-          const lostCount = counts.find(
-            (entry) => entry.level === "lost",
-          )!.count;
-
-          expect(goodCount).toBe("0");
-          expect(unsureCount).not.toBe("0");
-          expect(lostCount).toBe("0");
+          expect(findCountByLevel(counts, "good")).toBe(0);
+          expect(findCountByLevel(counts, "unsure")).not.toBe(0);
+          expect(findCountByLevel(counts, "lost")).toBe(0);
         });
 
         socket_admin.connect();
@@ -975,7 +952,7 @@ describe("Server-side socket testing", () => {
         await initialized;
 
         const [{ id: userId }] = await knex
-          .table("AnonGraspUser")
+          .table("AnonUser")
           .insert({})
           .returning("*");
 
@@ -986,7 +963,7 @@ describe("Server-side socket testing", () => {
             {
               level: "good",
               sent_at: new Date(Date.now()),
-              anon_grasp_user_id: userId,
+              anon_user_id: userId,
             },
             resolve,
           );
@@ -994,32 +971,20 @@ describe("Server-side socket testing", () => {
           expect(success).toBe(true);
         });
 
-        // Listen for the GraspReactionSend event on the admin
+        // Listen for the GraspReactionGet event on the admin
         const client_send_event = new Promise<Count[]>((resolve) => {
-          socket_admin
-            .off("GraspReactionSend")
-            .on("GraspReactionSend", resolve);
+          socket_admin.off("GraspReactionGet").on("GraspReactionGet", resolve);
         }).then((counts) => {
           counts.forEach((entry) => {
             expect(typeof entry.level).toBe("string");
-            expect(typeof entry.count).toBe("string");
+            expect(typeof entry.count).toBe("number");
           });
 
           // Check that the count of 'lost' is 0 and 'good' and 'unsure' is not 0
           // Based on the beforeEach data and newly sent grasp reaction
-          const goodCount = counts.find(
-            (entry) => entry.level === "good",
-          )!.count;
-          const unsureCount = counts.find(
-            (entry) => entry.level === "unsure",
-          )!.count;
-          const lostCount = counts.find(
-            (entry) => entry.level === "lost",
-          )!.count;
-
-          expect(goodCount).not.toBe("0");
-          expect(unsureCount).not.toBe("0");
-          expect(lostCount).toBe("0");
+          expect(findCountByLevel(counts, "good")).not.toBe(0);
+          expect(findCountByLevel(counts, "unsure")).not.toBe(0);
+          expect(findCountByLevel(counts, "lost")).toBe(0);
         });
 
         // Verify that the event is received and the reactions are reset
