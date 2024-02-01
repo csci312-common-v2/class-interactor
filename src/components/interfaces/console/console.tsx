@@ -9,7 +9,13 @@ import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Typography from "@mui/material/Typography";
 import ReminderBoard from "@/components/reminders/ReminderBoard";
+import dynamic from "next/dynamic";
 
+// Resource: https://stackoverflow.com/questions/75555873/error-require-of-es-module-in-react-gauge-chart-nextjs
+const DynamicGraspGaugeGraph = dynamic(
+  () => import("@/components/interactions/GraspGaugeGraph"),
+  { ssr: false },
+);
 interface Props {
   room: {
     id?: string;
@@ -85,6 +91,13 @@ const Console = ({ room }: Props) => {
     }
   };
 
+  const resetData = (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    if (socket) {
+      socket.emit("GraspReactionReset", { roomId: room.id });
+    }
+  };
+
   return (
     <Container maxWidth="lg">
       <Typography variant="h4" gutterBottom sx={{ mt: 1 }}>
@@ -136,6 +149,14 @@ const Console = ({ room }: Props) => {
             </ButtonGroup>
             <QuestionBoard admin />
           </Box>
+        </Grid>
+        <Grid xs={12} md={4}>
+          <ButtonGroup variant="outlined" size="small" sx={{ my: 1 }}>
+            <Button onClick={resetData} disabled={!socket}>
+              Reset
+            </Button>
+          </ButtonGroup>
+          <DynamicGraspGaugeGraph />
         </Grid>
       </Grid>
       <ReminderBoard admin />

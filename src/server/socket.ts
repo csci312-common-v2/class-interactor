@@ -1,15 +1,62 @@
 import * as socketio from "socket.io";
 import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
-import { parse } from "cookie";
+import { parse, serialize } from "cookie";
 // Due to the way Next creates a production application, we need to import knex
 // via a relative path, not using "@"
 import { knex } from "../knex/knex";
 import Room from "../models/Room";
+import GraspReaction from "../models/GraspReaction";
 
 // Develop from route description using /rooms/:rid/:admin?
 // http://forbeslindesay.github.io/express-route-tester/
 const roomRegEx = /^\/rooms\/(?:([^\/]+?))(?:\/([^\/]+?))?\/?$/i;
+
+interface GraspReactionWithCount extends GraspReaction {
+  count: number;
+}
+
+async function getActiveGraspReactionCount(
+  roomId: number,
+  timeInMinutes: number = 5,
+) {
+  const currentDate = new Date(Date.now()); // Use Date.now() for testing
+
+  // Grab the latest active reaction from a specific user in a room
+  const latestActiveReactions = await knex("GraspReaction")
+    .distinctOn("anon_user_id")
+    .select("*")
+    .where("is_active", true)
+    .andWhere("room_id", roomId)
+    .orderBy("anon_user_id", "asc")
+    .orderBy("sent_at", "desc");
+
+  // Create an array to store the counts for each level in the order that they will be graphed
+  // Note that all levels are returned to ensure GraspGaugeGraph order and colors
+  const levelCounts: { level: string; count: number }[] = [
+    { level: "good", count: 0 },
+    { level: "unsure", count: 0 },
+    { level: "lost", count: 0 },
+  ];
+
+  // Calculate the linear decay for each reaction in latestActiveReactions
+  latestActiveReactions.forEach((reaction) => {
+    const timeDifferenceInSeconds =
+      (currentDate.getTime() - new Date(reaction.sent_at).getTime()) / 1000;
+    const decay = Math.max(
+      0,
+      1 - timeDifferenceInSeconds / (timeInMinutes * 60),
+    );
+
+    // Find the corresponding level in levelCounts and add the decay
+    const levelCount = levelCounts.find((lc) => lc.level === reaction.level);
+    if (levelCount) {
+      levelCount.count += decay;
+    }
+  });
+
+  return levelCounts;
+}
 
 export function getNamespace(io: socketio.Server) {
   return io.of(async (name, auth, next) => {
@@ -72,7 +119,8 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
 
       next();
     } else {
-      next(); // Allow all non-administrative connections
+      // Allow all non-administrative connections
+      next();
     }
   });
 
@@ -237,6 +285,41 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           }
         }
       });
+
+      // Grasp Reactions
+      // Send all active reactions when a client newly connects
+      connectionQueries.push(
+        socket.emit(
+          "GraspReactionGet",
+          await getActiveGraspReactionCount(roomId),
+        ),
+      );
+
+      socket.on("GraspReactionReset", async (data, callback) => {
+        // Set all reactions to inactive
+        await GraspReaction.query()
+          .where("room_id", roomId)
+          .patch({ is_active: false });
+        socket.emit("GraspReactionReset");
+
+        // Primarily for testing
+        if (typeof callback === "function") {
+          callback(true);
+        }
+      });
+
+      socket.on("GraspReactionGet", async (data, callback) => {
+        // Send updated count calculations to admin
+        socket.emit(
+          "GraspReactionGet",
+          await getActiveGraspReactionCount(roomId),
+        );
+
+        // Primarily for testing
+        if (typeof callback === "function") {
+          callback(true);
+        }
+      });
     } else {
       // Viewer interface
 
@@ -325,6 +408,28 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
             position: Math.floor(Math.random() * 100),
             codePoint,
           });
+        }
+      });
+
+      // Grasp Reaction
+      socket.on("GraspReactionSend", async (data, callback) => {
+        const anonUserId = socket.request.anonUserCookie;
+
+        // Add grasp reaction to table with associated user
+        const [{ room_id: dropRoomId, ...newReaction }] = await knex
+          .table("GraspReaction")
+          .insert({ room_id: roomId, anon_user_id: anonUserId, ...data }, [
+            "*",
+          ]);
+
+        // Send this event over to the admin
+        io.of(`/rooms/${roomName}/admin`).emit(
+          "GraspReactionGet",
+          await getActiveGraspReactionCount(roomId),
+        );
+
+        if (typeof callback === "function") {
+          callback(true);
         }
       });
     }

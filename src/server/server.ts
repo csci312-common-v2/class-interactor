@@ -1,9 +1,11 @@
 import express, { Express, Request, Response } from "express";
 import * as http from "http";
+import { parse, serialize } from "cookie";
 import next, { NextApiHandler } from "next";
 import * as socketio from "socket.io";
 
 import { getNamespace, bindListeners } from "./socket";
+import { knex } from "../knex/knex";
 
 declare global {
   namespace Express {
@@ -25,8 +27,41 @@ nextApp.prepare().then(() => {
   const app: Express = express();
   const server: http.Server = http.createServer(app);
 
-  const io: socketio.Server = new socketio.Server();
-  io.attach(server);
+  const io: socketio.Server = new socketio.Server(server, {
+    allowRequest: async (req, callback) => {
+      const cookies = parse(req.headers.cookie || "");
+      let anonUserId;
+
+      if (!cookies["anon-user"]) {
+        // Cookie is not present, create the cookie value
+        // (i.e. new AnonUser and store it in database)
+        const [anonUserObject] = await knex
+          .table("AnonUser")
+          .insert({})
+          .returning("id");
+        anonUserId = anonUserObject.id;
+      } else {
+        anonUserId = cookies["anon-user"];
+      }
+
+      // Attach anonymous id to request object
+      req.anonUserCookie = anonUserId;
+      callback(null, true);
+    },
+  });
+
+  io.engine.on("initial_headers", (headers, request) => {
+    // Set the anon-user cookie
+    const cookieValue = request.anonUserCookie;
+    const duration = 15 * 7 * 24 * 60 * 60; // 15 weeks
+
+    // Always reset the duration
+    headers["set-cookie"] = serialize("anon-user", cookieValue, {
+      httpOnly: true,
+      sameSite: "strict",
+      maxAge: duration,
+    });
+  });
 
   // These parsers is required for Next and next-auth-related requests to work
   app.use(express.json());
