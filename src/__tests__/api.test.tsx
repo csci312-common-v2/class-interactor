@@ -51,7 +51,7 @@ describe("Class Interactor API", () => {
 
       await testApiHandler({
         rejectOnHandlerError: true,
-        handler: roomsEndpoint,
+        pagesHandler: roomsEndpoint,
         test: async ({ fetch }) => {
           const res = await fetch({
             method: "POST",

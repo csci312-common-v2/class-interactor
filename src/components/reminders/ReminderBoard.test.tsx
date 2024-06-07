@@ -1,4 +1,4 @@
-import ReminderBoard from "./ReminderBoard";
+import ReminderBoard, { ReminderPanelDateTime } from "./ReminderBoard";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
 import MockedSocket from "socket.io-mock";
 import {
@@ -9,7 +9,7 @@ import {
   fireEvent,
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { format } from "date-fns";
+import { format } from "date-fns/format";
 import mockdate from "mockdate";
 
 type MockedSocket = typeof MockedSocket;
@@ -64,7 +64,7 @@ describe("Reminder board", () => {
     render(<ReminderBoard admin />);
 
     const startTimeValue = new Date(Date.now() + 1 * 60 * 60 * 1000);
-    const expectedStartTime = format(startTimeValue, "EEE, M/d/yyyy, h:mm a");
+    const expectedStartTime = ReminderPanelDateTime.format(startTimeValue);
 
     // Since this isn't a built-in action, we need to wrap it in act()
     act(() => {
