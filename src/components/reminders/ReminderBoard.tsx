@@ -40,21 +40,21 @@ type ReminderPanelProps = {
   handleRemove?: () => void;
 };
 
+export const ReminderPanelDateTime = new Intl.DateTimeFormat("en-us", {
+  weekday: "short",
+  month: "numeric",
+  year: "numeric",
+  day: "numeric",
+  hour: "numeric",
+  minute: "numeric",
+});
+
 const ReminderPanel = ({
   reminder,
   showTimes,
   handleRemove,
 }: ReminderPanelProps) => {
   const [open, setOpen] = useState(true);
-
-  const formatDateTime = new Intl.DateTimeFormat("en-us", {
-    weekday: "short",
-    month: "numeric",
-    year: "numeric",
-    day: "numeric",
-    hour: "numeric",
-    minute: "numeric",
-  });
 
   // startTime is always assigned, but endTime is not
   const startTime = new Date(reminder.start_time);
@@ -102,14 +102,14 @@ const ReminderPanel = ({
               {startTime ? (
                 <Box>
                   <Typography data-testid="start-time-label" variant="caption">
-                    Start Time: {formatDateTime.format(startTime)}
+                    Start Time: {ReminderPanelDateTime.format(startTime)}
                   </Typography>
                 </Box>
               ) : null}
               {endTime ? (
                 <Box>
                   <Typography data-testid="end-time-label" variant="caption">
-                    End Time: {formatDateTime.format(endTime)}
+                    End Time: {ReminderPanelDateTime.format(endTime)}
                   </Typography>
                 </Box>
               ) : null}
@@ -218,7 +218,7 @@ const ReminderForm = ({ socket }: { socket?: Socket }) => {
               }}
               onError={(newError) => setEndError(newError)}
               disablePast
-              minDateTime={startTime}
+              minDateTime={startTime || undefined}
               value={endTime}
               onChange={(e) => setEndTime(e)}
             />
