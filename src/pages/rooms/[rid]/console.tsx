@@ -1,7 +1,9 @@
+import { ReactElement } from "react";
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
 import { useSession, signOut } from "next-auth/react";
 import { getServerSession } from "next-auth/next";
 import { SocketProvider } from "@/components/contexts/socket/useSocketContext";
+import Header from "@/components/interactions/Header";
 import Console from "@/components/interfaces/console/console";
 import { authOptions } from "@/pages/api/auth/[...nextauth]";
 import Room from "@/models/Room";
@@ -29,6 +31,15 @@ const Page = ({
     // Don't render anything until room is ready
     return <div />;
   }
+};
+
+Page.getLayout = function getLayout(page: ReactElement) {
+  return (
+    <>
+      <Header />
+      {page}
+    </>
+  );
 };
 
 export const getServerSideProps = (async (context) => {

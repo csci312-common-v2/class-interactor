@@ -1,5 +1,7 @@
+import { ReactElement } from "react";
 import Link from "next/link";
 import { knex } from "@/knex/knex";
+import Header from "@/components/interactions/Header";
 
 type RoomsProps = {
   rooms: Array<{ [key: string]: number }>;
@@ -14,6 +16,15 @@ const Page = ({ rooms }: RoomsProps) => {
         </li>
       ))}
     </ul>
+  );
+};
+
+Page.getLayout = function getLayout(page: ReactElement) {
+  return (
+    <>
+      <Header />
+      {page}
+    </>
   );
 };
 
