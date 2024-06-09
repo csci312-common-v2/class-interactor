@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, ReactElement } from "react";
 import { useRouter } from "next/router";
 import { useSession } from "next-auth/react";
+import Header from "@/components/interactions/Header";
 import Container from "@mui/material/Container";
 import Grid from "@mui/material/Unstable_Grid2";
 import Box from "@mui/material/Box";
@@ -57,6 +58,15 @@ const Page = () => {
         </Button>
       </Box>
     </Container>
+  );
+};
+
+Page.getLayout = function getLayout(page: ReactElement) {
+  return (
+    <>
+      <Header />
+      {page}
+    </>
   );
 };
 

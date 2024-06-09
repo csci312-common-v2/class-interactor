@@ -1,14 +1,10 @@
+import { ReactElement } from "react";
 import { Container, Typography } from "@mui/material";
-import Head from "next/head";
+import Header from "@/components/interactions/Header";
 
 export default function Home() {
   return (
     <>
-      <Head>
-        <title>Class Interactor</title>
-        <meta name="description" content="Class interaction application" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-      </Head>
       <main>
         <Container maxWidth="lg">
           <Typography variant="h4" gutterBottom sx={{ mt: 1 }}>
@@ -42,3 +38,12 @@ export default function Home() {
     </>
   );
 }
+
+Home.getLayout = function getLayout(page: ReactElement) {
+  return (
+    <>
+      <Header />
+      {page}
+    </>
+  );
+};
