@@ -3,7 +3,7 @@ import { useSocketContext } from "../contexts/socket/useSocketContext";
 import { styled, alpha } from "@mui/material/styles";
 import Stack from "@mui/material/Stack";
 
-const reactionEmoji = ["👍", "👎", "😁", "🤯", "💯", "💡"];
+const reactionEmoji = ["👍", "👎", "😁", "🤯", "😎", "💯", "💡"];
 
 const Emoji = styled("div")(({ theme }) => ({
   fontSize: "20pt",
@@ -15,7 +15,7 @@ const Reaction = () => {
 
   const handleFeedback = (
     event: React.MouseEvent<HTMLElement>,
-    codePoint?: number
+    codePoint?: number,
   ) => {
     if (socket && codePoint) {
       socket.emit("ReactionSend", codePoint);
