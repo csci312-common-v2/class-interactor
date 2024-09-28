@@ -392,6 +392,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
           // Let the submitter know their response was received successfully
           callback({ choice: newChoice });
         } catch (error) {
+          console.log("Error", error);
           if (error instanceof Error) {
             console.log("Error", error.message);
           }
