@@ -11,7 +11,11 @@ const customJestConfig = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
   },
-  testEnvironment: "jest-environment-jsdom",
+  // We create a custom environment to fill pieces of the browser environment that JSDOM does not provide
+  // Based on: https://github.com/mswjs/mswjs.io/issues/292#issue-1977585807
+  // We note that is not the recommended approach, but it is the only one that works for us so far without downgrading
+  // Next, etc.
+  testEnvironment: "<rootDir>/jsdom-extended.js",
 };
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

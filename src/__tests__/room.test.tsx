@@ -1,9 +1,10 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useSession } from "next-auth/react";
-import fetchMock from "fetch-mock-jest";
+import fetchMock from "@fetch-mock/jest";
 import mockRouter from "next-router-mock";
 import { createDynamicRouteParser } from "next-router-mock/dynamic-routes";
 import NewRoom from "@/pages/rooms/new";
+import { after } from "node:test";
 
 // Mock the NextAuth package
 jest.mock("next-auth/react");
@@ -20,9 +21,18 @@ mockRouter.useParser(
 );
 
 describe("Creating a new room", () => {
+  // Setup the fetch mock
+  beforeAll(() => {
+    fetchMock.mockGlobal();
+  });
+  afterAll(() => {
+    fetchMock.unmockGlobal();
+  });
+
   afterEach(() => {
     // Clear all mocks between tests
     jest.resetAllMocks();
+    fetchMock.mockReset();
   });
 
   test("Can create new room when logged in", async () => {

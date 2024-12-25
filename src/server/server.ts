@@ -1,7 +1,7 @@
-import express, { Express, Request, Response } from "express";
 import * as http from "http";
-import { parse, serialize } from "cookie";
-import next, { NextApiHandler } from "next";
+import { parse as parseUrl } from "url";
+import { parse as parseCookie, serialize } from "cookie";
+import next from "next";
 import * as socketio from "socket.io";
 
 import { getNamespace, bindListeners } from "./socket";
@@ -21,15 +21,17 @@ const port = parseInt(process.env.PORT || "3000", 10);
 const dev = process.env.NODE_ENV !== "production";
 
 const nextApp = next({ dev });
-const nextHandler: NextApiHandler = nextApp.getRequestHandler();
+const nextHandler = nextApp.getRequestHandler();
 
 nextApp.prepare().then(() => {
-  const app: Express = express();
-  const server: http.Server = http.createServer(app);
+  const server: http.Server = http.createServer((req, res) => {
+    const parsedUrl = parseUrl(req.url!, true);
+    nextHandler(req, res, parsedUrl);
+  });
 
   const io: socketio.Server = new socketio.Server(server, {
     allowRequest: async (req, callback) => {
-      const cookies = parse(req.headers.cookie || "");
+      const cookies = parseCookie(req.headers.cookie || "");
       let anonUserId;
 
       if (!cookies["anon-user"]) {
@@ -64,15 +66,12 @@ nextApp.prepare().then(() => {
   });
 
   // These parsers is required for Next and next-auth-related requests to work
-  app.use(express.json());
-  app.use(express.urlencoded({ extended: true }));
+  //app.use(express.json());
+  //app.use(express.urlencoded({ extended: true }));
 
   // Bind socket listeners to dynamic namespaces
   const room = getNamespace(io);
   bindListeners(io, room);
-
-  // Pass any un-handled requests through to Next
-  app.all("*", (req: any, res: any) => nextHandler(req, res));
 
   server.listen(port, () => {
     console.log(`> Ready on http://localhost:${port}`);

@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import Poll from "@/components/interactions/Poll";
 import QuestionBoard from "@/components/interactions/QuestionBoard";
 import Container from "@mui/material/Container";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
@@ -104,7 +104,7 @@ const Console = ({ room }: Props) => {
         Control Console: {room.name}
       </Typography>
       <Grid container spacing={2}>
-        <Grid xs={12} md={3}>
+        <Grid size={{ xs: 12, md: 3 }}>
           <Box
             sx={{
               display: "flex",
@@ -132,7 +132,7 @@ const Console = ({ room }: Props) => {
             <div>Responses: {pollId && pollResponses}</div>
           </Box>
         </Grid>
-        <Grid xs={12} md={5}>
+        <Grid size={{ xs: 12, md: 5 }}>
           <Box
             sx={{
               display: "flex",
@@ -150,7 +150,7 @@ const Console = ({ room }: Props) => {
             <QuestionBoard admin />
           </Box>
         </Grid>
-        <Grid xs={12} md={4}>
+        <Grid size={{ xs: 12, md: 4 }}>
           <ButtonGroup variant="outlined" size="small" sx={{ my: 1 }}>
             <Button onClick={resetData} disabled={!socket}>
               Reset
