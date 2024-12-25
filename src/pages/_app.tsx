@@ -4,7 +4,7 @@ import type { NextPage } from "next";
 import type { AppProps } from "next/app";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { AppCacheProvider } from "@mui/material-nextjs/v13-pagesRouter";
+import { AppCacheProvider } from "@mui/material-nextjs/v15-pagesRouter";
 import { useRouter } from "next/router";
 import { SessionProvider } from "next-auth/react";
 import theme from "@/material/theme";

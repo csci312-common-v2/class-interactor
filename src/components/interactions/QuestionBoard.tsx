@@ -1,6 +1,6 @@
 import { MouseEventHandler, useCallback, useEffect, useState } from "react";
 import { useSocketContext, Socket } from "../contexts/socket/useSocketContext";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import Box from "@mui/material/Box";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
@@ -117,7 +117,7 @@ const QuestionForm = ({ socket }: { socket?: Socket }) => {
   return (
     <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 1 }}>
       <Grid container spacing={1}>
-        <Grid xs>
+        <Grid size="grow">
           <TextField
             margin="none"
             fullWidth

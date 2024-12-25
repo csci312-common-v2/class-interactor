@@ -5,7 +5,7 @@ import Reaction from "@/components/interactions/Reaction";
 import ReactionDisplay from "@/components/interactions/ReactionDisplay";
 import QuestionBoard from "@/components/interactions/QuestionBoard";
 import Container from "@mui/material/Container";
-import Grid from "@mui/material/Unstable_Grid2";
+import Grid from "@mui/material/Grid2";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
@@ -50,7 +50,7 @@ const Participant = ({ room }: Props) => {
       </Typography>
       <ReminderBoard />
       <Grid container spacing={2}>
-        <Grid xs={12} md={2}>
+        <Grid size={{ xs: 12, md: 2 }}>
           <Stack
             direction="row"
             alignItems="baseline"
@@ -62,17 +62,17 @@ const Participant = ({ room }: Props) => {
           </Stack>
           <Poll key={pollId} id={pollId} />
         </Grid>
-        <Grid xs={12} md={5} order={{ xs: 4, sm: 2 }}>
+        <Grid size={{ xs: 12, md: 5 }} order={{ xs: 4, sm: 2 }}>
           <Typography variant="h6">Q & A</Typography>
           <QuestionBoard />
           <Typography variant="caption" color="text.secondary" component="div">
             Questions will appear once approved by your instructor.
           </Typography>
         </Grid>
-        <Grid xs={12} md={5} order={{ xs: 2, sm: 3 }}>
+        <Grid size={{ xs: 12, md: 5 }} order={{ xs: 2, sm: 3 }}>
           <GraspGauge />
         </Grid>
-        <Grid xs={12} md={12} order={{ xs: 3, sm: 4 }}>
+        <Grid size={12} order={{ xs: 3, sm: 4 }}>
           <Reaction />
           {/* Center reactions in "background" container " */}
           <Box

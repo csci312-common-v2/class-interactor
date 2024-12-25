@@ -10,7 +10,7 @@ import {
   DocumentHeadTags,
   DocumentHeadTagsProps,
   documentGetInitialProps,
-} from "@mui/material-nextjs/v13-pagesRouter";
+} from "@mui/material-nextjs/v15-pagesRouter";
 import theme, { roboto } from "@/material/theme";
 
 // https://github.com/mui/material-ui/blob/master/examples/material-ui-nextjs-pages-router-ts/pages/_document.tsx
