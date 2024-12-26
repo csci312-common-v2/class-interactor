@@ -1,5 +1,5 @@
 /**
- * @jest-environment node
+ * @vitest-environment node
  *
  * Use Node environment for server-side tests to avoid loading browser libraries.
  * This needs to be the top comment in the file
@@ -12,8 +12,8 @@ import { getServerSideProps as consoleGetServerSideProps } from "@/pages/rooms/[
 import type { ParsedUrlQuery } from "querystring";
 import type { GetServerSidePropsContext, PreviewData } from "next";
 
-jest.mock("next-auth/next");
-const mockedGetServerSession = jest.mocked(getServerSession);
+vi.mock("next-auth/next");
+const mockedGetServerSession = vi.mocked(getServerSession);
 
 describe("Class Interactor API", () => {
   beforeAll(

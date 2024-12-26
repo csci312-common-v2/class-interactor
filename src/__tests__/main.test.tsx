@@ -1,3 +1,4 @@
+import { test, describe } from "vitest";
 import Home from "@/pages/index";
 import { render } from "@testing-library/react";
 

@@ -4,17 +4,17 @@ An application for facilitating in-class interaction and a test-bed for [CSCI312
 
 ## Creation
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app). It uses Jest and Testing Library for testing, ESLint for static analysis, Prettier for styling, and is configured to use GitHub actions for testing pull requests.
+This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app). It uses Vitest and Testing Library for testing, ESLint for static analysis, Prettier for styling, and is configured to use GitHub actions for testing pull requests.
 
 Development dependencies installed with:
 
 ```plaintext
-💻 npm install -D jest jest-environment-jsdom husky lint-staged prettier eslint-config-prettier @testing-library/react @testing-library/jest-dom eslint-plugin-testing-library
+💻 npm install -D  vitest @vitejs/plugin-react vite-tsconfig-paths jsdom husky lint-staged prettier eslint-config-prettier @testing-library/react @testing-library/jest-dom eslint-plugin-testing-library
 ```
 
 The module alias `@/` is configured for `src/`.
 
-To enable sockets for real-time interaction, this application uses a custom server implemented with Express.
+To enable sockets for real-time interaction, this application uses a custom server with NextJS.
 
 ## Setup
 

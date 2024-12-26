@@ -7,16 +7,14 @@ import GraspGauge from "./GraspGauge";
 type MockedSocket = typeof MockedSocket;
 
 // Mock the socket context used to obtain the client socket
-jest.mock("../contexts/socket/useSocketContext");
+vi.mock("../contexts/socket/useSocketContext");
 
 // Create mocked type needed by TypeScript
-const mockedUseSocketContext = jest.mocked(useSocketContext);
+const mockedUseSocketContext = vi.mocked(useSocketContext);
 
 // Mock the useThrottle hook
-jest.mock("@/hooks/useThrottle");
-const mockedUseThrottle = useThrottle as jest.MockedFunction<
-  typeof useThrottle
->;
+vi.mock("@/hooks/useThrottle");
+const mockedUseThrottle = vi.mocked(useThrottle);
 
 describe("GraspGauge", () => {
   let socket: MockedSocket;
@@ -29,7 +27,7 @@ describe("GraspGauge", () => {
 
   afterEach(() => {
     // Clear all mocks between tests
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test("Render participant GraspGauge component", async () => {

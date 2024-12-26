@@ -2,7 +2,9 @@
   "extends": "./tsconfig.json",
   "ts-node": {
     // Needed to support path aliases (requires `npm i -D tsconfig-paths`)
-    "require": ["tsconfig-paths/register"]
+    "require": ["tsconfig-paths/register"],
+    // Needed to avoid missing types in dev mode https://github.com/TypeStrong/ts-node?tab=readme-ov-file#missing-types
+    "files": true
   },
   "compilerOptions": {
     "module": "commonjs",
@@ -12,5 +14,5 @@
     "isolatedModules": false,
     "noEmit": false
   },
-  "include": ["src/server/server.ts"]
+  "include": ["src/types/*.d.ts", "src/server/server.ts"]
 }

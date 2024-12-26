@@ -1,5 +1,5 @@
 /**
- * @jest-environment node
+ * @vitest-environment node
  *
  * Use Node environment for server-side tests to avoid loading browser libraries.
  * This needs to be the top comment in the file
