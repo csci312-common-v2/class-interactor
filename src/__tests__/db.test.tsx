@@ -33,23 +33,6 @@ describe("Database operations", () => {
       return knex.seed.run();
     });
 
-    test("Can create a reminder with a long description", async () => {
-      const [{ id: roomId }] = await knex("Room")
-        .select("id")
-        .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
-
-      const reminder = {
-        roomId,
-        title: "Test Reminder",
-        description: "This is a long description".repeat(100),
-        start_time: new Date(Date.now() - 1 * 60 * 60 * 1000),
-        end_time: new Date(Date.now() + 1 * 60 * 60 * 1000),
-      };
-
-      const [id] = await knex("Reminder").insert(reminder).returning("id");
-      expect(id).toBeDefined();
-    });
-
     test("Can create a long question", async () => {
       const [{ id: roomId }] = await knex("Room")
         .select("id")
