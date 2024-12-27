@@ -15,12 +15,4 @@ declare global {
     created_at: Date;
     ended_at: Date;
   }
-
-  interface Reminder {
-    id: number;
-    title: string;
-    description?: string;
-    start_time: Date;
-    end_time?: Date | null;
-  }
 }

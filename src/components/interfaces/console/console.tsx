@@ -8,7 +8,6 @@ import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 import ButtonGroup from "@mui/material/ButtonGroup";
 import Typography from "@mui/material/Typography";
-import ReminderBoard from "@/components/reminders/ReminderBoard";
 import dynamic from "next/dynamic";
 
 // Resource: https://stackoverflow.com/questions/75555873/error-require-of-es-module-in-react-gauge-chart-nextjs
@@ -159,7 +158,6 @@ const Console = ({ room }: Props) => {
           <DynamicGraspGaugeGraph />
         </Grid>
       </Grid>
-      <ReminderBoard admin />
     </Container>
   );
 };

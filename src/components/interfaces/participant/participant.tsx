@@ -10,7 +10,6 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import CircularProgress from "@mui/material/CircularProgress";
 import Stack from "@mui/material/Stack";
-import ReminderBoard from "@/components/reminders/ReminderBoard";
 import GraspGauge from "@/components/interactions/GraspGauge";
 
 interface Props {
@@ -48,7 +47,6 @@ const Participant = ({ room }: Props) => {
       <Typography variant="h4" gutterBottom sx={{ mt: 1 }}>
         Room: {room.name}
       </Typography>
-      <ReminderBoard />
       <Grid container spacing={2}>
         <Grid size={{ xs: 12, md: 2 }}>
           <Stack

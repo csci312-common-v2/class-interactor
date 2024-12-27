@@ -21,7 +21,6 @@ export default function Home() {
             <ul>
               <li>Question Polling</li>
               <li>Question Board</li>
-              <li>Reminders Board</li>
               <li>Reactions</li>
               <li>... and more!</li>
             </ul>

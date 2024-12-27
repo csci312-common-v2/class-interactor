@@ -242,50 +242,6 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         socket.emit("QuestionClear");
       });
 
-      // Reminder Board
-      // Send all reminder when a client newly connects
-      connectionQueries.push(
-        knex
-          .table("Reminder")
-          .where({ roomId })
-          .then((reminders) => {
-            socket.emit(
-              "ReminderSend",
-              reminders.map(({ roomId: dropRoomId, ...reminder }) => reminder),
-            );
-          }),
-      );
-
-      socket.on("ReminderSend", async (data, callback) => {
-        const [{ roomId: dropRoomId, ...newReminder }] = await knex
-          .table("Reminder")
-          .insert({ roomId, ...data }, ["*"]);
-
-        // Only immediately send out reminders whose start time has passed to participants
-        if (newReminder.start_time < new Date()) {
-          io.of(`/rooms/${roomName}`).emit("ReminderSend", [newReminder]);
-        }
-
-        socket.emit("ReminderSend", [newReminder]);
-        callback(true);
-      });
-
-      socket.on("ReminderRemove", async ({ reminderId }, callback) => {
-        // Remove reminder
-        const [reminder] = await knex("Reminder").where({ id: reminderId });
-
-        if (reminder) {
-          await knex("Reminder").where({ id: reminder.id }).delete();
-
-          io.of(`/rooms/${roomName}`).emit("ReminderRemoved", reminder.id);
-          socket.emit("ReminderRemoved", reminder.id);
-
-          if (typeof callback === "function") {
-            callback(reminder.id);
-          }
-        }
-      });
-
       // Grasp Reactions
       // Send all active reactions when a client newly connects
       connectionQueries.push(
@@ -332,24 +288,6 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
             socket.emit(
               "QuestionNew",
               questions.map(({ roomId: dropRoomId, ...question }) => question),
-            );
-          }),
-      );
-
-      // Send all reminders with an earlier start time and
-      // later end time when a client newly connects
-      connectionQueries.push(
-        knex
-          .table("Reminder")
-          .where({ roomId })
-          .where("start_time", "<=", knex.fn.now())
-          .andWhere(function () {
-            this.where("end_time", ">=", knex.fn.now()).orWhereNull("end_time");
-          })
-          .then((reminders) => {
-            socket.emit(
-              "ReminderSend",
-              reminders.map(({ roomId: dropRoomId, ...reminder }) => reminder),
             );
           }),
       );
