@@ -11,10 +11,10 @@ import MockedSocket from "socket.io-mock";
 type MockedSocket = typeof MockedSocket;
 
 // Mock the socket context used to obtain the client socket
-jest.mock("../contexts/socket/useSocketContext");
+vi.mock("../contexts/socket/useSocketContext");
 
 // Create mocked type needed by TypeScript
-const mockedUseSocketContext = jest.mocked(useSocketContext);
+const mockedUseSocketContext = vi.mocked(useSocketContext);
 
 describe("Question board", () => {
   let socket: MockedSocket;
@@ -26,7 +26,7 @@ describe("Question board", () => {
 
   afterEach(() => {
     // Clear all mocks between tests
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   test("Render QuestionBoard component", async () => {

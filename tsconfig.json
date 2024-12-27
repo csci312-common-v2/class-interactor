@@ -18,13 +18,13 @@
     "paths": {
       "@/*": ["src/*"]
     },
-    "typeRoots": [
-      "./src/types",
-      "./node_modules/@types",
-      "./node_modules/@testing-library"
+    "plugins": [
+      {
+        "name": "next"
+      }
     ],
-    "types": ["jest", "jest-dom"]
+    "types": ["vitest/globals"]
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
   "exclude": ["node_modules"]
 }

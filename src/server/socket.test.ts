@@ -1,5 +1,5 @@
 /**
- * @jest-environment node
+ * @vitest-environment node
  *
  * These are exclusively server-side tests and so we use the Node environment
  * for server-side tests to avoid loading browser libraries
@@ -15,8 +15,8 @@ import { getNamespace, bindListeners } from "./socket";
 import GraspReaction from "@/models/GraspReaction";
 
 // Mock the NextAuth package
-jest.mock("next-auth/jwt");
-const mockedGetToken = jest.mocked(getToken);
+vi.mock("next-auth/jwt");
+const mockedGetToken = vi.mocked(getToken);
 
 function allEvents(socket: ClientSocket, events: string[]) {
   // Return a promise that resolves when all events have been received
@@ -57,7 +57,7 @@ describe("Server-side socket testing", () => {
       socket_server.close(resolve);
     });
 
-    // To prevent a warning message from jest about a process failing to exit
+    // To prevent a warning message from vi about a process failing to exit
     // gracefully, we explicitly destroy the knex connection pool. Note we will
     // get an abort error if any subsequent queries are attempted after this point.
     await knex.destroy();
@@ -79,7 +79,7 @@ describe("Server-side socket testing", () => {
     }
 
     // Clear all mocks between tests
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe("Without authenticated user", () => {
@@ -381,7 +381,7 @@ describe("Server-side socket testing", () => {
         // Wait for both clients to be fully initialized
         await initialized;
 
-        // Specify expected shape of the question object using Jest matchers
+        // Specify expected shape of the question object using vi matchers
         const question_matcher = {
           id: expect.any(Number),
           question: "A new question",
@@ -578,7 +578,7 @@ describe("Server-side socket testing", () => {
         // Wait for both clients to be fully initialized
         await initialized;
 
-        // Specify expected shape of the reminder object using Jest matchers
+        // Specify expected shape of the reminder object using vi matchers
         const reminder_matcher = {
           id: expect.any(Number),
           title: "A new reminder",
@@ -692,7 +692,7 @@ describe("Server-side socket testing", () => {
         // Wait for both clients to be fully initialized
         await initialized;
 
-        // Specify expected shape of the reminder object using Jest matchers
+        // Specify expected shape of the reminder object using vi matchers
         const reminder_matcher = {
           id: expect.any(Number),
           title: "A new reminder",
@@ -780,7 +780,7 @@ describe("Server-side socket testing", () => {
 
       beforeEach(async () => {
         // Mocked timestamp
-        jest.spyOn(Date, "now").mockImplementation(() => 1673942400000);
+        vi.spyOn(Date, "now").mockImplementation(() => 1673942400000);
 
         const [{ id: roomId }] = await knex("Room")
           .select("id")
@@ -819,7 +819,7 @@ describe("Server-side socket testing", () => {
       });
 
       afterEach(() => {
-        jest.spyOn(Date, "now").mockRestore();
+        vi.spyOn(Date, "now").mockRestore();
       });
 
       test("Data based on active grasp reactions are sent on connection to admin", async () => {

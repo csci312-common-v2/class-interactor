@@ -10,15 +10,14 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { format } from "date-fns/format";
-import mockdate from "mockdate";
 
 type MockedSocket = typeof MockedSocket;
 
 // Mock the socket context used to obtain the client socket
-jest.mock("../contexts/socket/useSocketContext");
+vi.mock("../contexts/socket/useSocketContext");
 
 // Create mocked type needed by TypeScript
-const mockedUseSocketContext = jest.mocked(useSocketContext);
+const mockedUseSocketContext = vi.mocked(useSocketContext);
 
 describe("Reminder board", () => {
   let socket: MockedSocket;
@@ -26,13 +25,13 @@ describe("Reminder board", () => {
   beforeEach(() => {
     socket = new MockedSocket();
     mockedUseSocketContext.mockReturnValue(socket.socketClient);
-    mockdate.set("2024-01-16T17:00:00.000Z");
+    vi.setSystemTime(new Date("2024-01-16T17:00:00.000Z"));
   });
 
   afterEach(() => {
     // Clear all mocks between tests
-    jest.resetAllMocks();
-    mockdate.reset();
+    vi.resetAllMocks();
+    vi.useRealTimers();
   });
 
   test("Render participant ReminderBoard component", async () => {

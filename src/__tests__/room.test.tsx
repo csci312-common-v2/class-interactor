@@ -1,16 +1,15 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { useSession } from "next-auth/react";
-import fetchMock from "@fetch-mock/jest";
+import fetchMock from "@fetch-mock/vitest";
 import mockRouter from "next-router-mock";
 import { createDynamicRouteParser } from "next-router-mock/dynamic-routes";
 import NewRoom from "@/pages/rooms/new";
-import { after } from "node:test";
 
 // Mock the NextAuth package
-jest.mock("next-auth/react");
-const mockedUseSession = jest.mocked(useSession);
+vi.mock("next-auth/react");
+const mockedUseSession = vi.mocked(useSession);
 
-jest.mock("next/router", () => require("next-router-mock"));
+vi.mock("next/router", () => require("next-router-mock"));
 // Tell the mock router about the pages we will use (so we can use dynamic routes)
 mockRouter.useParser(
   createDynamicRouteParser([
@@ -31,7 +30,7 @@ describe("Creating a new room", () => {
 
   afterEach(() => {
     // Clear all mocks between tests
-    jest.resetAllMocks();
+    vi.resetAllMocks();
     fetchMock.mockReset();
   });
 
@@ -46,7 +45,7 @@ describe("Creating a new room", () => {
         expires: new Date(Date.now() + 2 * 86400).toISOString(),
       },
       status: "authenticated",
-      update: jest.fn(),
+      update: vi.fn(),
     });
 
     fetchMock.post("/api/rooms", () => ({
@@ -68,10 +67,18 @@ describe("Creating a new room", () => {
     const create = screen.getByRole("button", { name: /create/i });
     fireEvent.click(create);
 
-    expect(fetchMock).toHaveFetchedTimes(1, "/api/rooms", {
-      body: { name },
-      method: "post",
-    });
+    // There seems to be an open issue with the vitest extensions
+    // https://github.com/wheresrhys/fetch-mock/issues/874
+    expect(
+      fetchMock.callHistory.calls("/api/rooms", {
+        body: { name },
+        method: "post",
+      }),
+    ).toHaveLength(1);
+    // expect(fetchMock).toHaveFetchedTimes(1, "/api/rooms", {
+    //   body: { name },
+    //   method: "post",
+    // });
 
     await waitFor(() => {
       expect(mockRouter.asPath).toBe(
