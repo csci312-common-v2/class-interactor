@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSocketContext } from "@/components/contexts/socket/useSocketContext";
 import Box from "@mui/material/Box";
 import Poll from "@/components/interactions/Poll";
+import GraspGaugeGraph from "@/components/interactions/GraspGaugeGraph";
 import ReactionDisplay from "@/components/interactions/ReactionDisplay";
 
 const PositionedPoll = ({ pollId }: { pollId: number }) => {
@@ -24,10 +25,33 @@ const PositionedPoll = ({ pollId }: { pollId: number }) => {
   );
 };
 
+const PostionedGraspGuageGraph = () => {
+  return (
+    <Box
+      sx={{
+        position: "fixed",
+        top: 0,
+        right: 0,
+        background: "rgb(255, 255, 255)",
+        border: 2,
+        borderRadius: 1,
+        m: 1,
+        p: 1,
+        minWidth: 200,
+      }}
+    >
+      <GraspGaugeGraph interval={5 * 1000} />
+    </Box>
+  );
+};
+
 const Viewer = () => {
   const socket = useSocketContext();
+
   const [pollId, setPollId] = useState<number | null>(null);
   const [pollVisible, setPollVisible] = useState(false);
+
+  const [graspGaugeVisible, setGraspGaugeVisible] = useState(false);
 
   useEffect(() => {
     if (!socket) return;
@@ -45,14 +69,20 @@ const Viewer = () => {
       setPollVisible((prevVisible) => !prevVisible);
     };
 
+    const onGraspGaugeToggle = () => {
+      setGraspGaugeVisible((prevVisible) => !prevVisible);
+    };
+
     socket.on("PollStart", onPollStart);
     socket.on("PollEnd", onPollEnd);
     socket.on("PollToggle", onPollToggle);
+    socket.on("GraspReactionToggle", onGraspGaugeToggle);
 
     return () => {
       socket.off("PollStart", onPollStart);
       socket.off("PollEnd", onPollEnd);
       socket.off("PollToggle", onPollToggle);
+      socket.off("GraspReactionToggle", onGraspGaugeToggle);
     };
   }, [socket]);
 
@@ -65,6 +95,7 @@ const Viewer = () => {
         height: "100vh",
       }}
     >
+      {graspGaugeVisible && <PostionedGraspGuageGraph />}
       {pollId && pollVisible && <PositionedPoll key={pollId} pollId={pollId} />}
       <ReactionDisplay />
     </Box>

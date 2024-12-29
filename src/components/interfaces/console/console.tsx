@@ -40,8 +40,7 @@ const Console = ({ room }: Props) => {
     }
   }, [socket]);
 
-  const launchPoll = async (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const launchPoll = async () => {
     if (socket) {
       // If a poll is currently running, end it
       if (pollId) {
@@ -60,15 +59,13 @@ const Console = ({ room }: Props) => {
     }
   };
 
-  const revealPoll = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const revealPoll = () => {
     if (socket) {
       socket.emit("PollReveal", { roomId: room.id, pollId });
     }
   };
 
-  const endPoll = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const endPoll = () => {
     if (socket) {
       socket.emit("PollEnd", { roomId: room.id, pollId }, () => {
         setPollId(null);
@@ -76,24 +73,27 @@ const Console = ({ room }: Props) => {
     }
   };
 
-  const togglePoll = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const togglePoll = () => {
     if (socket) {
       socket.emit("PollToggle", { roomId: room.id, pollId });
     }
   };
 
-  const clearQuestions = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const clearQuestions = () => {
     if (socket) {
       socket.emit("QuestionClear", { roomId: room.id });
     }
   };
 
-  const resetData = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
+  const resetGraspData = () => {
     if (socket) {
       socket.emit("GraspReactionReset", { roomId: room.id });
+    }
+  };
+
+  const toggleGraspData = () => {
+    if (socket) {
+      socket.emit("GraspReactionToggle", { roomId: room.id });
     }
   };
 
@@ -151,8 +151,11 @@ const Console = ({ room }: Props) => {
         </Grid>
         <Grid size={{ xs: 12, md: 4 }}>
           <ButtonGroup variant="outlined" size="small" sx={{ my: 1 }}>
-            <Button onClick={resetData} disabled={!socket}>
+            <Button onClick={resetGraspData} disabled={!socket}>
               Reset
+            </Button>
+            <Button onClick={toggleGraspData} disabled={!socket}>
+              Toggle
             </Button>
           </ButtonGroup>
           <DynamicGraspGaugeGraph />

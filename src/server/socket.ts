@@ -264,17 +264,9 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         }
       });
 
-      socket.on("GraspReactionGet", async (data, callback) => {
-        // Send updated count calculations to admin
-        socket.emit(
-          "GraspReactionGet",
-          await getActiveGraspReactionCount(roomId),
-        );
-
-        // Primarily for testing
-        if (typeof callback === "function") {
-          callback(true);
-        }
+      socket.on("GraspReactionToggle", async (data) => {
+        // Toggle
+        io.of(`/rooms/${roomName}`).emit("GraspReactionToggle");
       });
     } else {
       // Viewer interface
@@ -393,6 +385,20 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
       // Send updated question to viewers and administrator
       io.of(`/rooms/${roomName}`).emit("QuestionNew", [question]);
       io.of(`/rooms/${roomName}/admin`).emit("QuestionNew", [question]);
+    });
+
+    // Grasp Reaction
+    socket.on("GraspReactionGet", async (data, callback) => {
+      // Send updated count calculations to admin
+      socket.emit(
+        "GraspReactionGet",
+        await getActiveGraspReactionCount(roomId),
+      );
+
+      // Primarily for testing
+      if (typeof callback === "function") {
+        callback(true);
+      }
     });
 
     Promise.all(connectionQueries).then(() => {
