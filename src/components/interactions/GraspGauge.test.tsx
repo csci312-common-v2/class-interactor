@@ -1,7 +1,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
 import MockedSocket from "socket.io-mock";
-import useThrottle from "@/hooks/useThrottle";
 import GraspGauge from "./GraspGauge";
 
 type MockedSocket = typeof MockedSocket;
@@ -12,46 +11,45 @@ vi.mock("../contexts/socket/useSocketContext");
 // Create mocked type needed by TypeScript
 const mockedUseSocketContext = vi.mocked(useSocketContext);
 
-// Mock the useThrottle hook
-vi.mock("@/hooks/useThrottle");
-const mockedUseThrottle = vi.mocked(useThrottle);
-
 describe("GraspGauge", () => {
   let socket: MockedSocket;
 
   beforeEach(() => {
     socket = new MockedSocket();
     mockedUseSocketContext.mockReturnValue(socket.socketClient);
-    mockedUseThrottle.mockReturnValue([null, false]);
+    vi.setSystemTime(new Date("2024-01-16T17:00:00.000Z"));
   });
 
   afterEach(() => {
     // Clear all mocks between tests
     vi.resetAllMocks();
+    vi.useRealTimers();
   });
 
   test("Render participant GraspGauge component", async () => {
     render(<GraspGauge />);
 
-    // Renders the Grasp Gauge title
-    expect(screen.getByText("Grasp Gauge")).toBeInTheDocument();
-
     // Renders the correct number of toggle buttons
     expect(screen.getAllByRole("button")).toHaveLength(3);
   });
 
-  test("ToggleButtonGroup is disabled after a button click", async () => {
-    // Mock the useThrottle hook before rendering the component
-    mockedUseThrottle.mockReturnValue([null, true]);
-
+  test("Grasp click triggers socket message", async () => {
     render(<GraspGauge />);
 
-    // Simulate a button click
+    const events = new Promise((resolve) => {
+      socket.on("GraspReactionSend", (graspReaction: GraspReaction) => {
+        expect(graspReaction).toMatchObject({
+          level: "good",
+          sent_at: "2024-01-16T17:00:00.000Z",
+        });
+        resolve(graspReaction);
+      });
+    });
+
+    // Simulate a button click on 'good' button
     fireEvent.click(screen.getAllByRole("button")[0]);
 
-    // Check if the buttons are disabled
-    screen.getAllByRole("button").forEach((button) => {
-      expect(button).toBeDisabled();
-    });
+    // Make sure the message was received by the server
+    await events;
   });
 });

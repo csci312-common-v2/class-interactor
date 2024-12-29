@@ -68,7 +68,11 @@ const Participant = ({ room }: Props) => {
           </Typography>
         </Grid>
         <Grid size={{ xs: 12, md: 5 }} order={{ xs: 2, sm: 3 }}>
+          <Typography variant="h6">Grasp Gauge</Typography>
           <GraspGauge />
+          <Typography variant="caption" color="text.secondary" component="div">
+            How are you feeling about the class material right now?
+          </Typography>
         </Grid>
         <Grid size={12} order={{ xs: 3, sm: 4 }}>
           <Reaction />
