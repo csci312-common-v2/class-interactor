@@ -15,4 +15,9 @@ declare global {
     created_at: Date;
     ended_at: Date;
   }
+
+  interface GraspReaction {
+    level: string;
+    emoji: string;
+  }
 }
