@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
 import { BarChart } from "@mui/x-charts/BarChart";
-import Grid from "@mui/material/Grid";
+import Grid from "@mui/material/Grid2";
 import { Box, Typography } from "@mui/material";
 
 type LevelCount = {
@@ -9,7 +9,7 @@ type LevelCount = {
   count: number;
 };
 
-const GraspGaugeGraph = () => {
+const GraspGaugeGraph = ({ interval = 60 * 1000 }) => {
   const maxWidth = 400;
   const maxHeight = 300;
   const socket = useSocketContext();
@@ -19,21 +19,18 @@ const GraspGaugeGraph = () => {
     if (socket) {
       // Update graph with grasp reactions at realtime
       const onGraspReactionGet = (incoming: LevelCount[]) => {
-        const updatedIncoming = incoming.map((item) => ({
-          ...item,
-          count: item.count,
-        }));
-        setGraspData(updatedIncoming);
+        setGraspData(incoming);
       };
 
       const onGraspReactionReset = () => {
         setGraspData([]);
       };
 
-      // Emit GraspReactionGet event every minute
+      // Emit GraspReactionGet event immediately and then every minute
+      socket.emit("GraspReactionGet");
       const intervalId = setInterval(() => {
         socket.emit("GraspReactionGet");
-      }, 60 * 1000);
+      }, interval);
 
       // Listen for events
       socket.on("GraspReactionGet", onGraspReactionGet);
@@ -48,39 +45,29 @@ const GraspGaugeGraph = () => {
     }
   }, [socket]);
 
-  // Convert data for chart to properly format
-  const chartData = graspData.reduce(
-    (acc: { [key: string]: number | string }, item) => {
-      acc[item.level] = item.count;
-      return acc;
-    },
-    {},
-  );
-  // Need to add another key for xAxis dataKey
-  chartData["series"] = "Grasp Reactions";
-
-  // Create series data to enable coloring of bars
-  const seriesData = Object.keys(chartData)
-    .filter((level) => level !== "series") // Exclude 'series' from the keys
-    .map((level) => {
-      return {
-        dataKey: level,
-        label: `${level.charAt(0).toUpperCase() + level.slice(1)}`,
-      };
-    });
-
   return (
     <Grid>
       {graspData.length > 0 ? (
         // Warning: Produces failed prop level errors in the console
         <BarChart
-          dataset={[chartData]}
-          series={seriesData}
-          xAxis={[{ scaleType: "band", dataKey: "series" }]}
+          dataset={graspData}
+          series={[{ dataKey: "count", label: "Count" }]}
           slotProps={{ legend: { hidden: true } }}
-          colors={["#357a38", "#ffea00", "#b2102f"]}
           width={maxWidth}
           height={maxHeight}
+          xAxis={[
+            {
+              scaleType: "band",
+              dataKey: "level",
+              colorMap: {
+                type: "ordinal",
+                colors: ["#357a38", "#ffea00", "#b2102f"],
+              },
+              valueFormatter: (value) =>
+                value.charAt(0).toUpperCase() + value.slice(1),
+            },
+          ]}
+          yAxis={[{ label: "Count" }]}
         />
       ) : (
         <Box

@@ -652,7 +652,6 @@ describe("Server-side socket testing", () => {
             {
               level: "good",
               sent_at: new Date(Date.now()),
-              anon_user_id: userId,
             },
             resolve,
           );
