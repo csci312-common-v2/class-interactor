@@ -1,14 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
-import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
-import ToggleButton from "@mui/material/ToggleButton";
-import { Box, Typography } from "@mui/material";
-import useThrottle from "@/hooks/useThrottle";
-
-interface GraspReaction {
-  level: string;
-  emoji: string;
-}
+import ButtonGroup from "@mui/material/ButtonGroup";
+import Button from "@mui/material/Button";
+import { Box } from "@mui/material";
+import useThrottleCallback from "@/hooks/useThrottleCallback";
 
 const graspReactions: GraspReaction[] = [
   { level: "Good", emoji: "😌" },
@@ -18,48 +13,36 @@ const graspReactions: GraspReaction[] = [
 
 const GraspGauge = () => {
   const socket = useSocketContext();
-  const [currentGrasp, setCurrentGrasp] = useState<GraspReaction | null>(null);
-  const [throttledValue, isDisabled] = useThrottle(currentGrasp, 3000);
 
-  useEffect(() => {
-    if (!isDisabled) {
-      setCurrentGrasp(null);
-    }
-  }, [isDisabled]);
-
-  const handleGraspChange = (
-    _event: React.MouseEvent<HTMLElement>,
-    updatedGrasp: GraspReaction | null,
-  ) => {
-    setCurrentGrasp(updatedGrasp);
-    if (socket && updatedGrasp) {
-      socket.emit("ReactionSend", updatedGrasp.emoji.codePointAt(0));
-      socket.emit("GraspReactionSend", {
-        level: updatedGrasp.level.toLowerCase(),
-        sent_at: new Date(),
-      });
-    }
-  };
+  const sendFeedback = useThrottleCallback(
+    useCallback(
+      (updatedGrasp: GraspReaction) => {
+        if (socket && updatedGrasp) {
+          socket.emit("ReactionSend", updatedGrasp.emoji.codePointAt(0));
+          socket.emit("GraspReactionSend", {
+            level: updatedGrasp.level.toLowerCase(),
+            sent_at: new Date(),
+          });
+        }
+      },
+      [socket],
+    ),
+    5000 /* ms */,
+  );
 
   return (
     <Box my={1}>
-      <Typography variant="h6">Grasp Gauge</Typography>
-      <ToggleButtonGroup
-        exclusive
-        disabled={isDisabled}
-        value={currentGrasp}
-        onChange={handleGraspChange}
-      >
+      <ButtonGroup variant="outlined">
         {graspReactions.map((gr) => (
-          <ToggleButton
+          <Button
             sx={{ p: 1, minWidth: 0 }}
             key={gr.emoji.codePointAt(0)}
-            value={gr}
+            onClick={() => sendFeedback(gr)}
           >
             {gr.emoji} {gr.level}
-          </ToggleButton>
+          </Button>
         ))}
-      </ToggleButtonGroup>
+      </ButtonGroup>
     </Box>
   );
 };
