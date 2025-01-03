@@ -297,7 +297,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
                 .where({ id: pollId })
                 .update({
                   values: knex.raw(
-                    `values || jsonb_build_object(:prevChoice::text, (values->>:prevChoice)::int - 1, :newChoice::text, (values->>:newChoice)::int + 1)`,
+                    `values || jsonb_build_object(:prevChoice::text, GREATEST((values->>:prevChoice)::int - 1, 0), :newChoice::text, (values->>:newChoice)::int + 1)`,
                     { prevChoice, newChoice },
                   ),
                 });

@@ -290,11 +290,12 @@ describe("Server-side socket testing", () => {
           });
         });
 
-        // Respond to a poll as a participants
+        // Respond to a poll as a participants (with unrecorded previous choice of 'A' that should be ignored
+        // to prevent counts below 0)
         const participant_callbacks = new Promise((resolve) => {
           socket_client.emit(
             "PollResponse",
-            { id: poll.id, newChoice: "B" },
+            { id: poll.id, prevChoice: "A", newChoice: "B" },
             resolve,
           );
         }).then((success) => {

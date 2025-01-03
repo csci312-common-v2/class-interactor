@@ -1,10 +1,67 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
 import { styled, alpha } from "@mui/material/styles";
 import ToggleButton from "@mui/material/ToggleButton";
 import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 
 const PollOptions = ["A", "B", "C", "D", "E"];
+
+// Store poll response in local storage to allow for persistence across sessions (i.e., if a student
+// closes the window, etc.)
+const usePollStorage = (key: string, id: number | null) => {
+  const [choice, setChoice] = useState<string | null>(null);
+
+  // Update local state with stored poll data, removing outdated stored data if present
+  const handleStoredPoll = useCallback(
+    (storedPoll: string | null) => {
+      if (storedPoll) {
+        const { id: storedId, choice: storedChoice } = JSON.parse(storedPoll);
+        if (storedId == id) {
+          setChoice(storedChoice);
+        } else {
+          // Remove outdated poll data
+          window.localStorage.removeItem(key);
+        }
+      }
+    },
+    [key, id],
+  );
+
+  // Alternate 'setter' that also updates stored poll response
+  const setAndSaveChoice = useCallback(
+    (newChoice: string) => {
+      setChoice(newChoice);
+      window.localStorage.setItem(
+        key,
+        JSON.stringify({ id, choice: newChoice }),
+      );
+    },
+    [key, id],
+  );
+
+  // Listen for changes made by other tabs, etc.
+  useEffect(() => {
+    const listener = (event: StorageEvent) => {
+      if (event.key === key) {
+        handleStoredPoll(event.newValue);
+      }
+    };
+    window.addEventListener("storage", listener);
+    return () => {
+      window.removeEventListener("storage", listener);
+    };
+  }, []);
+
+  // When creating new poll look for stored poll data
+  useEffect(() => {
+    if (id) {
+      const storedPoll = window.localStorage.getItem(key);
+      handleStoredPoll(storedPoll);
+    }
+  }, [id]);
+
+  return [choice, setAndSaveChoice] as const;
+};
 
 // Override disabled and selected style so disabled doesn't look different
 const StyledToggleButton = styled(ToggleButton)({
@@ -32,7 +89,7 @@ const AnswerFraction = styled("span")<AnswerFractionProps>(
     right: 0,
     transform: `translateX(${-100 + fraction}%)`,
     backgroundColor: `${alpha(theme.palette.primary.main, 0.3)}`,
-  })
+  }),
 );
 
 type AnswerEntryProps = {
@@ -65,9 +122,9 @@ type PollProps = {
 
 const Poll = ({ id, totalCallback }: PollProps) => {
   const socket = useSocketContext();
-  const [choice, setChoice] = useState<string | null>(null);
+  const [choice, setChoice] = usePollStorage("interactor.poll", id);
   const [pollData, setPollData] = useState<{ [key: string]: number } | null>(
-    null
+    null,
   );
   const [total, setTotal] = useState(0);
 
@@ -97,7 +154,7 @@ const Poll = ({ id, totalCallback }: PollProps) => {
 
   const handleChoice = async (
     event: React.MouseEvent<HTMLElement>,
-    newChoice: string | null
+    newChoice: string | null,
   ) => {
     if (socket && newChoice !== null) {
       socket.emit(
@@ -105,7 +162,7 @@ const Poll = ({ id, totalCallback }: PollProps) => {
         { id, prevChoice: choice, newChoice },
         (response: PollAnswerResponse) => {
           setChoice(response.choice);
-        }
+        },
       );
     }
   };
