@@ -64,7 +64,8 @@ export const authOptions = {
           if (localUser) {
             // If found, link this account to the existing User with the same e-mail address. We assume that the oauth
             // email is verified (since we checked it in the signIn callback above).
-            localAccount = (await User.relatedQuery("accounts")
+            localAccount = (await localUser
+              .$relatedQuery("accounts")
               .insert({
                 provider: account.provider,
                 providerId: account.providerAccountId,

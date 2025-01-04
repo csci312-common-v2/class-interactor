@@ -20,6 +20,10 @@ export async function seed(knex: Knex): Promise<void> {
         name: "Middlebury Panther",
         email: "panther@middlebury.edu",
       },
+      {
+        name: "Alexander Twilight",
+        email: "atwilight@middlebury.edu",
+      },
     ],
     ["id"],
   );
