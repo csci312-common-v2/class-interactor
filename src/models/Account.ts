@@ -13,7 +13,10 @@ export default class Account extends BaseModel {
   static get jsonSchema() {
     return {
       type: "object",
-      required: ["provider", "providerId", "userId"],
+      // We should think of required as those properties that are required to create
+      // a new instance of the model, not those that are required in the database.
+      // https://github.com/Vincit/objection.js/issues/393#issuecomment-305474345
+      required: ["provider", "providerId"],
 
       properties: {
         id: { type: "integer" },
