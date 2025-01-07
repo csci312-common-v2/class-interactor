@@ -12,7 +12,7 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "lint": "next lint",
-    "prepare": "husky",
+    "prepare": "husky || true",
     "knex": "TS_NODE_COMPILER_OPTIONS='{ \"module\": \"commonjs\" }' npx knex"
   },
   "dependencies": {
@@ -73,6 +73,6 @@
     "vitest": "^2.1.8"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,css,md,json}": "prettier --write"
+    "*.{js,jsx,mjs,ts,tsx,mts,css,md,json}": "prettier --write"
   }
 }
