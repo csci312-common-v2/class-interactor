@@ -1,4 +1,4 @@
-import { MouseEventHandler, useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSocketContext, Socket } from "../contexts/socket/useSocketContext";
 import Grid from "@mui/material/Grid2";
 import Box from "@mui/material/Box";
@@ -159,7 +159,7 @@ const QuestionBoard = ({ admin }: { admin?: boolean }) => {
         setQuestions((existing) => mergeQuestions(existing, incoming));
       };
 
-      const onQuestionRemoved = (removedQuestionId: Number) => {
+      const onQuestionRemoved = (removedQuestionId: number) => {
         setQuestions((existing) =>
           existing.filter((q) => q.id !== removedQuestionId),
         );

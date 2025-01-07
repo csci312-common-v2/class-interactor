@@ -6,7 +6,7 @@ import Stack from "@mui/material/Stack";
 
 const reactionEmoji = ["👍", "👎", "😁", "🤯", "😎", "💯", "💡"];
 
-const Emoji = styled("div")(({ theme }) => ({
+const Emoji = styled("div")(({}) => ({
   fontSize: "20pt",
   cursor: "pointer",
 }));
@@ -32,7 +32,9 @@ const Reaction = () => {
         <Emoji
           key={emoji.codePointAt(0)}
           role="button"
-          onClick={() => sendFeedback(emoji.codePointAt(0))}
+          onClick={() =>
+            sendFeedback(emoji.codePointAt(0)! /* Won't be undefined */)
+          }
         >
           {emoji}
         </Emoji>

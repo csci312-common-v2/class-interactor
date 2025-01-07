@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { useSocketContext } from "../contexts/socket/useSocketContext";
-import { styled, alpha } from "@mui/material/styles";
+import { styled } from "@mui/material/styles";
 import Slide from "@mui/material/Slide";
 
 interface EmojiTrackProps {
   position: number;
 }
 
-const EmojiTrack = styled("div")<EmojiTrackProps>(({ theme, position }) => ({
+const EmojiTrack = styled("div")<EmojiTrackProps>(({ position }) => ({
   position: "absolute",
   top: "30vh",
   left: `${position}%`,
@@ -15,7 +15,7 @@ const EmojiTrack = styled("div")<EmojiTrackProps>(({ theme, position }) => ({
   overflowY: "hidden",
 }));
 
-const Emoji = styled("div")(({ theme }) => ({
+const Emoji = styled("div")(({}) => ({
   fontSize: "20pt",
 }));
 
@@ -72,7 +72,7 @@ const ReactionDisplay = () => {
           codePoint={codePoint}
           onEnd={() =>
             setReactions((currReactions) =>
-              currReactions.filter((reaction) => reaction.id !== id)
+              currReactions.filter((reaction) => reaction.id !== id),
             )
           }
         />

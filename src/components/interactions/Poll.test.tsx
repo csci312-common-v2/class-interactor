@@ -44,7 +44,10 @@ describe("Polling", () => {
       const new_click_events = new Promise((resolve) => {
         socket.on(
           "PollResponse",
-          (response: { id: number; newChoice: string }, callback: Function) => {
+          (
+            response: { id: number; newChoice: string },
+            callback: (arg0: { choice: string }) => void,
+          ) => {
             expect(response).toMatchObject({
               id: 2,
               newChoice: "E",
@@ -74,7 +77,7 @@ describe("Polling", () => {
             "PollResponse",
             (
               response: { id: number; newChoice: string },
-              callback: Function,
+              callback: (arg0: { choice: string }) => void,
             ) => {
               expect(response).toMatchObject({
                 id: 2,

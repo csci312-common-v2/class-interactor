@@ -9,6 +9,7 @@ import NewRoom from "@/pages/rooms/new";
 vi.mock("next-auth/react");
 const mockedUseSession = vi.mocked(useSession);
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 vi.mock("next/router", () => require("next-router-mock"));
 // Tell the mock router about the pages we will use (so we can use dynamic routes)
 mockRouter.useParser(

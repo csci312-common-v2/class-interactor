@@ -18,7 +18,7 @@ type RoomProp =
 const Page = ({
   room,
 }: InferGetServerSidePropsType<typeof getServerSideProps>) => {
-  const { data: session, status } = useSession({ required: true });
+  const { status } = useSession({ required: true });
 
   if (room && status === "authenticated") {
     return (

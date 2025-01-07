@@ -43,7 +43,7 @@ const GraspGaugeGraph = ({ interval = 60 * 1000 }) => {
         clearInterval(intervalId);
       };
     }
-  }, [socket]);
+  }, [socket, interval]);
 
   return (
     <Grid>
