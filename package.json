@@ -12,7 +12,7 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "lint": "next lint",
-    "prepare": "husky || true",
+    "prepare": "node .husky/install.mjs",
     "knex": "TS_NODE_COMPILER_OPTIONS='{ \"module\": \"commonjs\" }' npx knex"
   },
   "dependencies": {
