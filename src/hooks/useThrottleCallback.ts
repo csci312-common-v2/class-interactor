@@ -9,8 +9,8 @@ import { useRef, useCallback } from "react";
  * @param interval The number of milliseconds to throttle invocations to.
  * @returns The new throttled function
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default function useThrottleCallback<
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   T extends (...args: any[]) => ReturnType<T>,
 >(callback: T, interval = 500) {
   const lastUpdated = useRef(0);
