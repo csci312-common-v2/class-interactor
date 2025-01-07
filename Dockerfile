@@ -24,12 +24,11 @@ FROM base AS build
 RUN apt-get update -qq && \
     apt-get install --no-install-recommends -y build-essential node-gyp pkg-config python-is-python3
 
-# Install node modules
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile --prod=false
-
-# Copy application code
+# Copy application code and install node modules
+# Unlike Fly.io example, we copy all the files first so .huksy/install.mjs
+# and other files used in prepare script are available.
 COPY . .
+RUN pnpm install --frozen-lockfile --prod=false
 
 # Build application
 RUN pnpm run build
