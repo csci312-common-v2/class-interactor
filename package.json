@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "preinstall": "npx only-allow pnpm",
     "predev": "docker compose -f docker-compose.dev.yml up -d",
     "postdev": "docker compose -f docker-compose.dev.yml down",
     "dev": "trap 'exit 0' SIGINT; nodemon",
@@ -11,7 +12,7 @@
     "test": "vitest",
     "test:ci": "vitest run",
     "lint": "next lint",
-    "prepare": "husky",
+    "prepare": "node .husky/install.mjs",
     "knex": "TS_NODE_COMPILER_OPTIONS='{ \"module\": \"commonjs\" }' npx knex"
   },
   "dependencies": {
@@ -22,7 +23,9 @@
     "@mui/material": "^6.3.0",
     "@mui/material-nextjs": "^6.3.0",
     "@mui/x-charts": "^7.23.2",
+    "@next/env": "^15.1.2",
     "ajv-formats": "^3.0.1",
+    "cookie": "^1.0.2",
     "cross-env": "^7.0.3",
     "knex": "^3.1.0",
     "next": "^15.1.2",
@@ -37,6 +40,7 @@
     "uuid": "^11.0.3"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
     "@fetch-mock/vitest": "^0.2.6",
     "@flydotio/dockerfile": "^0.5.9",
     "@testcontainers/postgresql": "^10.16.0",
@@ -69,6 +73,6 @@
     "vitest": "^2.1.8"
   },
   "lint-staged": {
-    "*.{js,jsx,ts,tsx,css,md,json}": "prettier --write"
+    "*.{js,jsx,mjs,ts,tsx,mts,css,md,json}": "prettier --write"
   }
 }

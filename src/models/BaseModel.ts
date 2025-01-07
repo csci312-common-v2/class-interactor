@@ -1,4 +1,3 @@
-/* eslint-disable camelcase */
 import { Model, AjvValidator } from "objection";
 import addFormats from "ajv-formats";
 import { knex } from "../knex/knex";

@@ -14,7 +14,7 @@ class CustomFSSource<T> {
   }
 
   async getFiles(_loadExtensions: readonly string[]): Promise<string[]> {
-    let dirents = await fs.readdir(this.directory, {
+    const dirents = await fs.readdir(this.directory, {
       withFileTypes: true,
     });
     return dirents

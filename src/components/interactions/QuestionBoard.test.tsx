@@ -54,14 +54,17 @@ describe("Question board", () => {
     render(<QuestionBoard />);
 
     const events = new Promise((resolve) => {
-      socket.on("QuestionAsk", (question: Question, callback: Function) => {
-        expect(question).toMatchObject({
-          question: "Question 2",
-          anonymous: true, // All questions are anonymous till we have accounts
-        });
-        callback(true);
-        resolve(question);
-      });
+      socket.on(
+        "QuestionAsk",
+        (question: Question, callback: (arg0: boolean) => void) => {
+          expect(question).toMatchObject({
+            question: "Question 2",
+            anonymous: true, // All questions are anonymous till we have accounts
+          });
+          callback(true);
+          resolve(question);
+        },
+      );
     });
 
     // Fill the form and submit the new question

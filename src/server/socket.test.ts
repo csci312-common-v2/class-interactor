@@ -308,13 +308,12 @@ describe("Server-side socket testing", () => {
     });
 
     describe("Question submission", () => {
-      let question: Question;
       beforeEach(async () => {
         // Add a pending question to the database
         const [{ id: roomId }] = await knex("Room")
           .select("id")
           .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
-        [question] = await knex("Question").insert(
+        await knex("Question").insert(
           {
             roomId,
             question: "Test question",
@@ -346,7 +345,7 @@ describe("Server-side socket testing", () => {
           ]).then(([questions]) => {
             expect(questions).toHaveLength(numQuestions);
             if (numQuestions > 0) {
-              const [question, ...rest] = questions as Question[];
+              const [question] = questions as Question[];
               expect(question).not.toHaveProperty("roomId"); // roomId is not sent to clients
             }
           });
@@ -604,7 +603,7 @@ describe("Server-side socket testing", () => {
       });
 
       test("Admin receives GraspReactionSend from client", async () => {
-        const [{ id: roomId }] = await knex("Room")
+        await knex("Room")
           .select("id")
           .where("visibleId", "a418c099-4114-4c55-8a5b-4a142c2b26d1");
 
@@ -641,10 +640,7 @@ describe("Server-side socket testing", () => {
         // Wait for both clients to be fully initialized
         await initialized;
 
-        const [{ id: userId }] = await knex
-          .table("AnonUser")
-          .insert({})
-          .returning("*");
+        await knex.table("AnonUser").insert({}).returning("*");
 
         // Emit the GraspReactionSend event from the participant client
         const participant_send_callback = new Promise<void>((resolve) => {

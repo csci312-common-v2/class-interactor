@@ -4,12 +4,12 @@ An application for facilitating in-class interaction and a test-bed for [CSCI312
 
 ## Creation
 
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app). It uses Vitest and Testing Library for testing, ESLint for static analysis, Prettier for styling, and is configured to use GitHub actions for testing pull requests.
+This is a [PNPM](https://pnpm.io)-based [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app). It uses Vitest and Testing Library for testing, ESLint for static analysis, Prettier for styling, and is configured to use GitHub actions for testing pull requests.
 
 Development dependencies installed with:
 
 ```plaintext
-💻 npm install -D  vitest @vitejs/plugin-react vite-tsconfig-paths jsdom husky lint-staged prettier eslint-config-prettier @testing-library/react @testing-library/jest-dom eslint-plugin-testing-library
+💻 pnpm install -D  vitest @vitejs/plugin-react vite-tsconfig-paths jsdom husky lint-staged prettier eslint-config-prettier @testing-library/react @testing-library/jest-dom eslint-plugin-testing-library
 ```
 
 The module alias `@/` is configured for `src/`.
@@ -20,7 +20,7 @@ To enable sockets for real-time interaction, this application uses a custom serv
 
 ### Dependencies
 
-Install application dependencies with `💻 npm install`.
+Install application dependencies with `💻 pnpm install`.
 
 You will also need to have Docker installed on your development system. This application is designed to use the PostgreSQL RDBMS for testing, development and production. It will automatically start (and stop) ephemeral database servers in containers for tests and database server with persistent storage in a container for development.
 
@@ -37,8 +37,8 @@ Database migration and seeding is implemented with Knex.js. Due to differences i
 Initialize the database with:
 
 ```plaintext
-💻 npm run knex migrate:latest
-💻 npm run knex seed:run
+💻 pnpm run knex migrate:latest
+💻 pnpm run knex seed:run
 ```
 
 To change the environment specify `NODE_ENV` before the command ot specify with environment variables and knex environment to use, e.g., `💻 NODE_ENV=production npm run knex migrate:latest`.

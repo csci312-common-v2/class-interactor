@@ -50,7 +50,7 @@ const usePollStorage = (key: string, id: number | null) => {
     return () => {
       window.removeEventListener("storage", listener);
     };
-  }, []);
+  }, [key, handleStoredPoll]);
 
   // When creating new poll look for stored poll data
   useEffect(() => {
@@ -58,7 +58,7 @@ const usePollStorage = (key: string, id: number | null) => {
       const storedPoll = window.localStorage.getItem(key);
       handleStoredPoll(storedPoll);
     }
-  }, [id]);
+  }, [key, handleStoredPoll, id]);
 
   return [choice, setAndSaveChoice] as const;
 };
@@ -117,7 +117,7 @@ type PollAnswerResponse = {
 
 type PollProps = {
   id: number | null;
-  totalCallback?: Function;
+  totalCallback?: (total: number) => void;
 };
 
 const Poll = ({ id, totalCallback }: PollProps) => {

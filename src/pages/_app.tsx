@@ -11,6 +11,7 @@ import theme from "@/material/theme";
 import ErrorSnackbar from "@/components/interactions/ErrorSnackbar";
 
 // Adapted from: https://nextjs.org/docs/pages/building-your-application/routing/pages-and-layouts#with-typescript
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type NextPageWithLayout<P = {}, IP = P> = NextPage<P, IP> & {
   getLayout?: (page: ReactElement) => ReactNode;
 };

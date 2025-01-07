@@ -10,7 +10,7 @@ import Button from "@mui/material/Button";
 import Typography from "@mui/material/Typography";
 
 const Page = () => {
-  const { data: session, status } = useSession({ required: true });
+  const { status } = useSession({ required: true });
   const router = useRouter();
 
   const [name, setName] = useState("");

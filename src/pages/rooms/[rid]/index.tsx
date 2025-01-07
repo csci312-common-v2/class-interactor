@@ -1,6 +1,4 @@
-import { useEffect, useState } from "react";
 import type { InferGetServerSidePropsType, GetServerSideProps } from "next";
-import { useSession } from "next-auth/react";
 import { SocketProvider } from "@/components/contexts/socket/useSocketContext";
 import Participant from "@/components/interfaces/participant/participant";
 import Room from "@/models/Room";
@@ -29,7 +27,7 @@ const Page = ({
 
 export const getServerSideProps = (async (context) => {
   const { rid } = context.query;
-  let room = await Room.query().findOne({ visibleId: rid });
+  const room = await Room.query().findOne({ visibleId: rid });
   if (room) {
     return {
       props: {

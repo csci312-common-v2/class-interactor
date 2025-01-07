@@ -7,14 +7,6 @@ import * as socketio from "socket.io";
 import { getNamespace, bindListeners } from "./socket";
 import { knex } from "../knex/knex";
 
-declare global {
-  namespace Express {
-    export interface Request {
-      io?: socketio.Server;
-    }
-  }
-}
-
 // https://wallis.dev/blog/socketio-with-nextjs-and-es6-import
 
 const port = parseInt(process.env.PORT || "3000", 10);

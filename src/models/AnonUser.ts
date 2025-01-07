@@ -1,4 +1,3 @@
-import { Model } from "objection";
 import BaseModel from "./BaseModel";
 
 export default class AnonUser extends BaseModel {

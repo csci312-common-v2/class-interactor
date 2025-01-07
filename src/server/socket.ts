@@ -1,7 +1,7 @@
 import * as socketio from "socket.io";
 import { getToken } from "next-auth/jwt";
 import { v4 as uuidv4 } from "uuid";
-import { parse, serialize } from "cookie";
+import { parse } from "cookie";
 // Due to the way Next creates a production application, we need to import knex
 // via a relative path, not using "@"
 import { knex } from "../knex/knex";
@@ -11,10 +11,6 @@ import GraspReaction from "../models/GraspReaction";
 // Develop from route description using /rooms/:rid/:admin?
 // http://forbeslindesay.github.io/express-route-tester/
 const roomRegEx = /^\/rooms\/(?:([^\/]+?))(?:\/([^\/]+?))?\/?$/i;
-
-interface GraspReactionWithCount extends GraspReaction {
-  count: number;
-}
 
 async function getActiveGraspReactionCount(
   roomId: number,
@@ -190,7 +186,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         io.of(`/rooms/${roomName}`).emit("PollResults", poll.values);
       });
 
-      socket.on("PollToggle", async ({ pollId }) => {
+      socket.on("PollToggle", async ({}) => {
         // Toggle poll visibility on all viewers
         io.of(`/rooms/${roomName}`).emit("PollToggle");
       });
@@ -264,7 +260,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         }
       });
 
-      socket.on("GraspReactionToggle", async (data) => {
+      socket.on("GraspReactionToggle", async () => {
         // Toggle
         io.of(`/rooms/${roomName}`).emit("GraspReactionToggle");
       });
@@ -347,7 +343,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
         const anonUserId = socket.request.anonUserCookie;
 
         // Add grasp reaction to table with associated user
-        const [{ room_id: dropRoomId, ...newReaction }] = await knex
+        await knex
           .table("GraspReaction")
           .insert({ room_id: roomId, anon_user_id: anonUserId, ...data }, [
             "*",
@@ -376,7 +372,7 @@ export function bindListeners(io: socketio.Server, room: socketio.Namespace) {
       io.of(`/rooms/${roomName}/admin`).emit("QuestionNew", [newQuestion]);
     });
 
-    socket.on("QuestionUpvote", async ({ questionId }, callback) => {
+    socket.on("QuestionUpvote", async ({ questionId }) => {
       const [{ roomId: dropRoomId, ...question }] = await knex
         .table("Question")
         .where({ id: questionId })
